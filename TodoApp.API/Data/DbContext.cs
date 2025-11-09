@@ -1,0 +1,14 @@
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using TodoApp.API.Models;
+
+namespace TodoApp.API.Data
+{
+    public class DbContext : IdentityDbContext<AppUser>
+    {
+        public DbContext(DbContextOptions<DbContext> options) : base(options){}
+
+        public DbSet<Todo> Todo { get; set; }
+
+        }
+}

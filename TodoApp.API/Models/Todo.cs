@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TodoApp.API.Models
 {
-    public class Todos
+    public class Todo
     {
         [Key]
         public int TodoId { get; set; }
@@ -13,6 +13,8 @@ namespace TodoApp.API.Models
         [Required]
         public string TodoContent { get; set; } = string.Empty;
         public bool IsCompleted { get; set; } = false;
+
+        public bool IsDeleted { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
