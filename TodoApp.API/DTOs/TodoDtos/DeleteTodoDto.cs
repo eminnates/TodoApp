@@ -3,6 +3,6 @@
     public class DeleteTodoDto
     {
         public int TodoId { get; set; }
-        public bool IsDeleted { get; set; } = false;
+        public bool IsDeleted { get; set; }
     }
 }

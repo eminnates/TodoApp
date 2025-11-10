@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace TodoApp.API.Models
+namespace TodoApp.API.Models.Entites
 {
     public class Todo
     {
