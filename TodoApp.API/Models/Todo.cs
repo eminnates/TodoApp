@@ -16,5 +16,9 @@ namespace TodoApp.API.Models
 
         public bool IsDeleted { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime? DueDate { get; set; }
+
+        public AppUser AppUser { get; set; }
     }
 }

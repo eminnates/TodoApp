@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <Folder Include="Controllers\" />
-    <Folder Include="DTOs\" />
+    <Folder Include="DTOs\AppUserDtos\" />
     <Folder Include="Services\" />
   </ItemGroup>
 
