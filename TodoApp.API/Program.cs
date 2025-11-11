@@ -1,4 +1,5 @@
 using System.Text;
+using DotNetEnv;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -11,6 +12,43 @@ using TodoApp.API.Services;
 using TodoApp.API.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Load .env file (if present) into environment variables so JWT_KEY and other secrets
+// can be provided via a local .env during development. This is optional — in production
+// prefer real secret stores or environment variables.
+// Try several locations so running via `dotnet run` or the built exe can find the file.
+try
+{
+	// First try default lookup (searches current directory and parents)
+	Env.Load();
+}
+catch
+{
+	// If default lookup didn't find one, try common app paths explicitly.
+	try
+	{
+		var candidates = new[]
+		{
+			AppContext.BaseDirectory,          // bin/Debug/netX
+			builder.Environment.ContentRootPath, // project root when using dotnet run
+			Directory.GetCurrentDirectory()
+		};
+
+		foreach (var dir in candidates)
+		{
+			var path = Path.Combine(dir, ".env");
+			if (File.Exists(path))
+			{
+				Env.Load(path);
+				break;
+			}
+		}
+	}
+	catch
+	{
+		// ignore any errors loading .env; we'll fallback to real environment variables
+	}
+}
 
 // Add controllers and FluentValidation
 builder.Services.AddControllers();

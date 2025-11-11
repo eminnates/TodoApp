@@ -9,7 +9,7 @@ namespace TodoApp.API.Models.Entities
         [Key]
         public int TodoId { get; set; }
         [ForeignKey("AppUser")]
-        public int UserId { get; set; }
+        public string UserId { get; set; } = string.Empty;
         [Required]
         public string TodoContent { get; set; } = string.Empty;
         public bool IsCompleted { get; set; } = false;
