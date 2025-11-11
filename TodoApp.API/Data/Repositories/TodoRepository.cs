@@ -1,24 +1,25 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TodoApp.API.Models.Entites;
+using TodoApp.API.Models.Entities;
+using TodoApp.API.Data;
 
 namespace TodoApp.API.Data.Repositories
 {
     public class TodoRepository : ITodoRepository
     {
-        private readonly DbContext context;
+        private readonly DbContext _context;
         private readonly DbSet<Todo> dbSet;
 
         public TodoRepository(DbContext context)
         {
-            this.context = context;
-            this.dbSet = context.Set<Todo>();
+            _context = context;
+            this.dbSet = _context.Set<Todo>();
         }
 
         public async Task<bool> CreateTodoAsync(Todo todo)
         {
 
             await dbSet.AddAsync(todo);
-            var created = await context.SaveChangesAsync();
+            var created = await _context.SaveChangesAsync();
             return created > 0;
         }
 
@@ -28,7 +29,7 @@ namespace TodoApp.API.Data.Repositories
             if (todo == null)
                 throw new Exception($"Todo with id {todoId} not found");
             todo.IsDeleted = true;
-            return await context.SaveChangesAsync() > 0;
+            return await _context.SaveChangesAsync() > 0;
 
         }
 
@@ -59,7 +60,7 @@ namespace TodoApp.API.Data.Repositories
             var existingTodo = await GetTodoByIdAsync(todo.TodoId);
             existingTodo.TodoContent = todo.TodoContent;
             existingTodo.IsCompleted = todo.IsCompleted;
-            return await context.SaveChangesAsync() > 0;
+            return await _context.SaveChangesAsync() > 0;
         }
     }
 }

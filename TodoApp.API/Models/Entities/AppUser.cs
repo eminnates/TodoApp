@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 
-namespace TodoApp.API.Models.Entites
+namespace TodoApp.API.Models.Entities
 {
     public class AppUser : IdentityUser
     {

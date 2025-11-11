@@ -1,4 +1,4 @@
-﻿using TodoApp.API.Models.Entites;
+﻿using TodoApp.API.Models.Entities;
 
 namespace TodoApp.API.Data.Repositories
 {

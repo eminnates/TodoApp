@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using TodoApp.API.Models.Entites;
+using TodoApp.API.Models.Entities;
 
 namespace TodoApp.API.Data
 {
