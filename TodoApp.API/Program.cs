@@ -50,6 +50,18 @@ catch
 	}
 }
 
+// Add CORS - Next.js frontend için
+builder.Services.AddCors(options =>
+{
+	options.AddPolicy("NextJsPolicy", policy =>
+	{
+		policy.WithOrigins("http://localhost:3000") // Next.js dev server
+			.AllowAnyMethod()
+			.AllowAnyHeader()
+			.AllowCredentials();
+	});
+});
+
 // Add controllers and FluentValidation
 builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
@@ -109,6 +121,8 @@ builder.Services.AddScoped<IAppUserRepository,AppUserRepository>();
 builder.Services.AddScoped<ITodoRepository, TodoRepository>();
 
 var app = builder.Build();
+
+app.UseCors("NextJsPolicy");
 
 app.UseRouting();
 

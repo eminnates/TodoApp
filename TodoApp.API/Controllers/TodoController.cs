@@ -26,7 +26,8 @@ namespace TodoApp.API.Controllers
             TodoId = t.TodoId,
             TodoContent = t.TodoContent,
             IsCompleted = t.IsCompleted,
-            IsDeleted = t.IsDeleted
+            CreatedAt = t.CreatedAt,
+            DueDate = t.DueDate
         };
 
         [HttpGet]
@@ -108,7 +109,7 @@ namespace TodoApp.API.Controllers
         }
 
         [HttpPatch("{id:int}/toggle")]
-        public async Task<IActionResult> Toggle(int id, [FromBody] ToggleTodoDto? dto)
+        public async Task<ActionResult<TodoDto>> Toggle(int id)
         {
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
@@ -119,17 +120,28 @@ namespace TodoApp.API.Controllers
                 if (existing.IsDeleted) return NotFound();
                 if (existing.UserId != userId) return Forbid(); // 403 Forbidden
 
-                if (dto is null)
-                    existing.IsCompleted = !existing.IsCompleted;
-                else
-                    existing.IsCompleted = dto.IsCompleted;
+                // Debug: Önceki değer
+                Console.WriteLine($"[Toggle] BEFORE - TodoId: {existing.TodoId}, IsCompleted: {existing.IsCompleted}");
 
+                // Toggle değerini değiştir (her zaman toggle yap, dto kullanma)
+                existing.IsCompleted = !existing.IsCompleted;
+
+                // Debug: Sonraki değer
+                Console.WriteLine($"[Toggle] AFTER - TodoId: {existing.TodoId}, IsCompleted: {existing.IsCompleted}");
+
+                // Kaydet
                 var ok = await _todoRepository.UpdateTodoAsync(existing);
                 if (!ok) return BadRequest(new { message = "Todo could not be toggled" });
-                return NoContent();
+                
+                // Güncellenmiş entity'yi tekrar çek (fresh data)
+                var updated = await _todoRepository.GetTodoByIdAsync(id);
+                Console.WriteLine($"[Toggle] RESPONSE - TodoId: {updated.TodoId}, IsCompleted: {updated.IsCompleted}");
+                
+                return Ok(ToDto(updated));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"[Toggle] ERROR - {ex.Message}");
                 return NotFound();
             }
         }

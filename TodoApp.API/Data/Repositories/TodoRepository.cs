@@ -41,7 +41,8 @@ namespace TodoApp.API.Data.Repositories
 
         public async Task<Todo> GetTodoByIdAsync(int todoId)
         {
-            var todo = await dbSet.FirstOrDefaultAsync(t => t.TodoId == todoId);
+            // AsNoTracking kullan, her seferinde fresh entity dönsün
+            var todo = await dbSet.AsNoTracking().FirstOrDefaultAsync(t => t.TodoId == todoId);
             if (todo == null || todo.IsDeleted)
                 throw new Exception($"Todo with id {todoId} not found");
             return todo;
@@ -57,11 +58,28 @@ namespace TodoApp.API.Data.Repositories
 
         public async Task<bool> UpdateTodoAsync(Todo todo)
         {
-            var existingTodo = await GetTodoByIdAsync(todo.TodoId);
-            existingTodo.TodoContent = todo.TodoContent;
-            existingTodo.IsCompleted = todo.IsCompleted;
-            existingTodo.DueDate = todo.DueDate;
-            return await _context.SaveChangesAsync() > 0;
+            // AsNoTracking kullandığımız için entity tracked değil
+            // Önce attach et, sonra modified olarak işaretle
+            var entry = _context.Entry(todo);
+            
+            // Eğer detached ise attach et
+            if (entry.State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+            {
+                dbSet.Attach(todo);
+            }
+            
+            // Debug: Entity state kontrol et
+            Console.WriteLine($"[UpdateTodo BEFORE] TodoId: {todo.TodoId}, IsCompleted: {todo.IsCompleted}, State: {entry.State}");
+            
+            // Tüm property'leri modified olarak işaretle
+            entry.State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+            
+            Console.WriteLine($"[UpdateTodo AFTER] TodoId: {todo.TodoId}, IsCompleted: {todo.IsCompleted}, State: {entry.State}");
+            
+            var saved = await _context.SaveChangesAsync();
+            Console.WriteLine($"[UpdateTodo] Saved changes: {saved}");
+            
+            return saved > 0;
         }
     }
 }
