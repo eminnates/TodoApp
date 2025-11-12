@@ -106,14 +106,14 @@ function TodosContent() {
             </div>
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Todo App</h1>
-              <p className="text-xs text-gray-500">Hoş geldin, {user?.fullName || user?.userName}</p>
+              <p className="text-xs text-gray-500">Welcome, {user?.fullName || user?.userName}</p>
             </div>
           </div>
           <button
             onClick={() => logout()}
             className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium text-sm"
           >
-            Çıkış Yap
+            Logout
           </button>
         </div>
       </div>
@@ -126,14 +126,14 @@ function TodosContent() {
             <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Yeni Todo Ekle
+            Add New Todo
           </h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <input
                 {...register("todoContent")}
                 type="text"
-                placeholder="Ne yapacaksın?"
+                placeholder="What do you need to do?"
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 transition-all text-gray-800 placeholder-gray-400"
               />
               {errors.todoContent && (
@@ -149,7 +149,7 @@ function TodosContent() {
               <input
                 {...register("dueDate")}
                 type="datetime-local"
-                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 transition-all text-gray-700"
+                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 transition-all text-gray-900"
               />
               <button
                 type="submit"
@@ -162,14 +162,14 @@ function TodosContent() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Ekleniyor...
+                    Adding...
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
-                    Ekle
+                    Add
                   </span>
                 )}
               </button>
@@ -197,15 +197,15 @@ function TodosContent() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
-              <p className="text-gray-500">Yükleniyor...</p>
+              <p className="text-gray-500">Loading...</p>
             </div>
           ) : todos?.length === 0 ? (
             <div className="text-center py-12">
               <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <p className="text-gray-500 text-lg">Henüz todo yok</p>
-              <p className="text-gray-400 text-sm">Yukarıdan yeni todo ekle!</p>
+              <p className="text-gray-500 text-lg">No todos yet</p>
+              <p className="text-gray-400 text-sm">Add a new todo above!</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -223,14 +223,14 @@ function TodosContent() {
                     checked={todo.isCompleted}
                     onChange={() => toggleMutation.mutate(todo.todoId)}
                     className="w-5 h-5 rounded-md border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer transition-all hover:border-blue-500"
-                    title={todo.isCompleted ? "Tamamlanmış olarak işaretle" : "Tamamlanmamış olarak işaretle"}
+                    title={todo.isCompleted ? "Mark as incomplete" : "Mark as complete"}
                   />
 
                   {editingId === todo.todoId ? (
                     <input
                       type="text"
                       defaultValue={todo.todoContent}
-                      placeholder="Todo içeriği..."
+                      placeholder="Todo content..."
                       onBlur={(e) => handleUpdate(todo.todoId, e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
@@ -238,7 +238,7 @@ function TodosContent() {
                         }
                         if (e.key === "Escape") setEditingId(null);
                       }}
-                      className="flex-1 px-3 py-2 border-2 border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2 border-2 border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400"
                       autoFocus
                     />
                   ) : (
@@ -249,7 +249,7 @@ function TodosContent() {
                           ? "line-through text-gray-400"
                           : "text-gray-700 hover:text-blue-600"
                       }`}
-                      title="Düzenlemek için tıkla"
+                      title="Click to edit"
                     >
                       {todo.todoContent}
                     </span>
@@ -268,7 +268,7 @@ function TodosContent() {
                     onClick={() => deleteMutation.mutate(todo.todoId)}
                     disabled={deleteMutation.isPending}
                     className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-50"
-                    title="Sil"
+                    title="Delete"
                   >
                     {deleteMutation.isPending && deleteMutation.variables === todo.todoId ? (
                       <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">

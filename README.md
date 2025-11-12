@@ -1,161 +1,156 @@
-# 🎯 Todo App - Next.js Frontend Rehberi
+# Todo App - Full Stack Application
 
-Modern, güvenli ve kullanıcı dostu bir todo uygulaması. Bu rehber Next.js'e hiç bilgin olmasa bile başlayabilmen için hazırlandı.
+A modern, secure, and user-friendly task management application built with Next.js and ASP.NET Core.
 
-## 📚 İçindekiler
-- [Proje Nedir?](#proje-nedir)
-- [Teknolojiler](#teknolojiler)
-- [Klasör Yapısı](#klasör-yapısı)
-- [Kurulum](#kurulum)
-- [Kavramlar](#kavramlar)
-- [Nasıl Çalışır?](#nasıl-çalışır)
-
----
-
-## 🎯 Proje Nedir?
-
-Bu Next.js frontend uygulaması, ASP.NET Core backend'ini kullanan bir todo yönetim sistemi. Kullanıcılar:
-- Kayıt olabilir ve giriş yapabilir (JWT authentication)
-- Todo ekleyebilir, düzenleyebilir, silebilir
-- Todo'ları tamamlanmış olarak işaretleyebilir
-- Tarih ekleyebilir
+## Table of Contents
+- [Project Overview](#project-overview)
+- [Technologies](#technologies)
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [Core Concepts](#core-concepts)
+- [Application Flow](#application-flow)
 
 ---
 
-## 🛠 Teknolojiler
+## Project Overview
 
-### Temel
-- **Next.js 15**: React tabanlı web framework'ü (sayfalar oluşturur, routing yapar)
-- **React 18**: UI bileşenlerini oluşturan kütüphane
-- **TypeScript**: JavaScript'e tip güvenliği ekler (hataları önler)
+This is a full-stack todo management system consisting of:
+- **Frontend**: Next.js 15 with TypeScript, providing a responsive and modern UI
+- **Backend**: ASP.NET Core 9 with JWT authentication and EF Core
 
-### Stil
-- **Tailwind CSS**: Utility-first CSS framework'ü (hızlı styling)
-
-### Form & Validation
-- **React Hook Form**: Formları yönetir, performanslı
-- **Zod**: Şema doğrulama (email doğru mu, şifre yeterli uzun mu?)
-
-### State Management
-- **Zustand**: Basit, global state yönetimi (kullanıcı bilgisi, login durumu)
-- **TanStack Query**: Server state yönetimi (API istekleri, cache, otomatik yenileme)
-
-### API İletişimi
-- **Axios**: HTTP istekleri için (fetch'in gelişmiş versiyonu)
+### Features
+- User registration and authentication (JWT-based)
+- Create, read, update, and delete todos
+- Mark todos as complete/incomplete
+- Due date support
+- Protected routes with authentication guards
 
 ---
 
-## 📁 Klasör Yapısı
+## Technologies
+
+### Frontend Stack
+- **Next.js 15**: React-based web framework with App Router
+- **React 18**: Component-based UI library
+- **TypeScript**: Type-safe JavaScript superset
+- **Tailwind CSS**: Utility-first CSS framework
+- **React Hook Form**: Performant form management
+- **Zod**: Schema validation library
+- **Zustand**: Lightweight state management
+- **TanStack Query**: Server state management and caching
+- **Axios**: HTTP client with interceptors
+
+### Backend Stack
+- **ASP.NET Core 9**: Web API framework
+- **Entity Framework Core**: ORM with InMemory database
+- **ASP.NET Identity**: User authentication and authorization
+- **JWT**: Token-based authentication
+
+---
+
+## Project Structure
 
 ```
-TodoApp.Web/
-├── app/                    # Next.js App Router (sayfalar)
-│   ├── layout.tsx         # Ana layout (her sayfada ortak)
-│   ├── page.tsx           # Ana sayfa (/)
-│   ├── providers.tsx      # TanStack Query provider
-│   ├── globals.css        # Global CSS
-│   ├── login/
-│   │   └── page.tsx       # Login sayfası (/login)
-│   ├── register/
-│   │   └── page.tsx       # Register sayfası (/register)
-│   └── todos/
-│       └── page.tsx       # Todos sayfası (/todos)
-├── components/            # Yeniden kullanılabilir bileşenler
-│   └── auth-guard.tsx     # Korumalı sayfa wrapper'ı
-├── lib/                   # Yardımcı fonksiyonlar
-│   ├── api-client.ts      # Axios instance (token ekler)
-│   ├── api/
-│   │   ├── auth.ts        # Auth API fonksiyonları
-│   │   └── todo.ts        # Todo API fonksiyonları
-│   └── validations/
-│       ├── auth.ts        # Login/Register validasyon şemaları
-│       └── todo.ts        # Todo validasyon şemaları
-├── store/                 # Global state
-│   └── auth-store.ts      # Kullanıcı login state (Zustand)
-├── .env.local            # Environment variables (API URL)
-├── package.json          # Bağımlılıklar
-├── tailwind.config.ts    # Tailwind konfigürasyonu
-└── tsconfig.json         # TypeScript konfigürasyonu
+TodoApp/
+├── TodoApp.API/              # Backend API
+│   ├── Controllers/          # API endpoints
+│   ├── Data/                 # Database context and repositories
+│   ├── DTOs/                 # Data transfer objects
+│   ├── Models/               # Domain entities and validators
+│   └── Services/             # Business logic services
+│
+└── TodoApp.Web/              # Frontend application
+    ├── app/                  # Next.js App Router
+    │   ├── layout.tsx        # Root layout
+    │   ├── page.tsx          # Home page
+    │   ├── providers.tsx     # TanStack Query provider
+    │   ├── login/            # Login page
+    │   ├── register/         # Registration page
+    │   └── todos/            # Todo management page
+    ├── components/           # Reusable components
+    ├── lib/                  # Utilities and API clients
+    │   ├── api-client.ts     # Axios configuration
+    │   ├── api/              # API functions
+    │   └── validations/      # Zod schemas
+    └── store/                # Global state management
 ```
 
 ---
 
-## 🚀 Kurulum
+## Installation
 
-### 1. Bağımlılıkları Yükle
+### Prerequisites
+- Node.js 18+ and npm
+- .NET 9 SDK
+
+### Backend Setup
+```bash
+cd TodoApp.API
+dotnet restore
+dotnet run
+```
+API will be available at `http://localhost:5186`
+
+### Frontend Setup
 ```bash
 cd TodoApp.Web
 npm install
-```
-
-### 2. Environment Variables
-`.env.local` dosyası zaten oluşturuldu:
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000
-```
-> ⚠️ `NEXT_PUBLIC_` öneki: Next.js'de browser'da erişilebilir değişkenler bu önekle başlar.
-
-### 3. Backend'i Çalıştır
-Başka bir terminalde:
-```bash
-cd TodoApp/TodoApp.API
-dotnet run
-```
-Backend `http://localhost:5000` üzerinde çalışmalı.
-
-### 4. Frontend'i Çalıştır
-```bash
 npm run dev
 ```
-Frontend `http://localhost:3000` üzerinde açılacak.
+Application will be available at `http://localhost:3000`
+
+### Environment Variables
+Create `.env.local` in the frontend directory:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5186
+```
+
+Note: The `NEXT_PUBLIC_` prefix is required for browser-accessible variables in Next.js.
 
 ---
 
-## 📖 Kavramlar
+## Core Concepts
 
-### Next.js Nedir?
-React tabanlı bir framework. Avantajları:
-- **File-based routing**: `app/login/page.tsx` → `/login` rotası otomatik oluşur
-- **Server & Client Components**: Bazı kodlar sunucuda, bazıları tarayıcıda çalışır
-- **Optimizasyon**: Otomatik kod bölme, image optimization vs.
+### Next.js App Router
+Next.js uses file-based routing where the file structure in the `app` directory automatically creates routes:
+- `app/page.tsx` → `/`
+- `app/login/page.tsx` → `/login`
+- `app/todos/page.tsx` → `/todos`
 
 ### Client vs Server Components
-- **Server Component**: Default, sunucuda render olur (SEO+, veri getirme hızlı)
-- **Client Component**: `"use client"` ile başlar, tarayıcıda çalışır (state, event handlers için gerekli)
+- **Server Components**: Default in Next.js 13+, render on the server
+- **Client Components**: Marked with `"use client"`, required for hooks and interactivity
 
-Örnek:
+Example:
 ```tsx
-"use client"; // Bu satır olmadan useState çalışmaz!
+"use client";
 
 import { useState } from "react";
 
-export default function MyPage() {
-  const [count, setCount] = useState(0); // Client-side state
-  return <button onClick={() => setCount(count + 1)}>Count: {count}</button>;
+export default function Counter() {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
 }
 ```
 
-### TanStack Query (React Query) Nedir?
-Server state'i yöneten kütüphane. Avantajları:
-- **Otomatik cache**: Aynı veriyi tekrar getirmez
-- **Background refetch**: Veri eskiyince otomatik yeniler
-- **Loading/Error states**: Tek satırda `isLoading`, `error` durumları
+### TanStack Query
+Manages server state with automatic caching and background updates:
 
-Örnek:
 ```tsx
 const { data: todos, isLoading } = useQuery({
-  queryKey: ["todos"],        // Cache key
-  queryFn: todoApi.getAll,    // Veri getirme fonksiyonu
+  queryKey: ["todos"],
+  queryFn: todoApi.getAll,
 });
-
-if (isLoading) return <p>Yükleniyor...</p>;
-return <ul>{todos.map(t => <li>{t.todoContent}</li>)}</ul>;
+```
+const { data: todos, isLoading } = useQuery({
+  queryKey: ["todos"],
+  queryFn: todoApi.getAll,
+});
 ```
 
-### Zustand Nedir?
-Basit global state kütüphanesi. Redux'tan çok daha basit.
+### Zustand State Management
+Minimalist global state library, simpler than Redux:
 
-Örnek:
 ```tsx
 // store/auth-store.ts
 export const useAuthStore = create<AuthState>((set) => ({
@@ -170,106 +165,100 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 }));
 
-// Kullanımı (herhangi bir component'te)
+// Usage in any component
 const { user, logout } = useAuthStore();
-<p>Hoş geldin {user.fullName}</p>
-<button onClick={logout}>Çıkış</button>
 ```
 
-### React Hook Form Nedir?
-Performanslı form yönetimi. Her tuşa basmada re-render olmaz.
+### React Hook Form
+Performant form management with minimal re-renders:
 
-Örnek:
 ```tsx
 const { register, handleSubmit, formState: { errors } } = useForm({
-  resolver: zodResolver(loginSchema), // Zod ile validasyon
+  resolver: zodResolver(loginSchema),
 });
 
 const onSubmit = (data) => {
-  console.log(data); // { email: "...", password: "..." }
+  console.log(data);
 };
 
 <form onSubmit={handleSubmit(onSubmit)}>
-  <input {...register("email")} />
-  {errors.email && <p>{errors.email.message}</p>}
+  <input {...register("username")} />
+  {errors.username && <p>{errors.username.message}</p>}
 </form>
 ```
 
-### Zod Nedir?
-TypeScript-first şema validasyonu.
+### Zod Validation
+TypeScript-first schema validation:
 
-Örnek:
 ```tsx
 const loginSchema = z.object({
-  email: z.string().email("Geçerli email gir"),
-  password: z.string().min(6, "En az 6 karakter"),
+  userName: z.string().min(1, "Username is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-type LoginInput = z.infer<typeof loginSchema>; // { email: string, password: string }
+type LoginInput = z.infer<typeof loginSchema>;
 ```
 
 ---
 
-## ⚙️ Nasıl Çalışır?
+## Application Flow
 
-### 1. Kullanıcı Kaydı (/register)
+### 1. User Registration
 
-**Akış:**
+Flow:
 ```
-User → Form doldurur → React Hook Form → Zod validasyon
-  ↓ (Geçerli ise)
-authApi.register(data) → Axios → Backend /api/auth/register
-  ↓ (Başarılı ise)
-Success mesajı → 2 saniye sonra /login'e yönlendir
+User fills form → React Hook Form → Zod validation
+  ↓ (if valid)
+authApi.register(data) → POST /api/auth/register
+  ↓ (if successful)
+Success message → Redirect to /login after 2 seconds
 ```
 
-**Kod:**
+Implementation:
 ```tsx
-// app/register/page.tsx
 const onSubmit = async (data: RegisterInput) => {
-  await authApi.register(data);  // API çağrısı
+  await authApi.register(data);
   setSuccess(true);
   setTimeout(() => router.push("/login"), 2000);
 };
 ```
 
-### 2. Giriş Yapma (/login)
+### 2. User Login
 
-**Akış:**
+Flow:
 ```
-User → Email/Şifre gir → React Hook Form → Zod validasyon
+User enters credentials → React Hook Form → Zod validation
   ↓
-authApi.login(data) → Backend /api/auth/login
-  ↓ (Başarılı ise)
-JWT Token döner → useAuthStore.login(token, user)
+authApi.login(data) → POST /api/auth/login
+  ↓ (returns JWT token)
+useAuthStore.login(token, user)
   ↓
-Token localStorage'a kaydedilir → /todos'a yönlendir
+Token stored in localStorage → Redirect to /todos
 ```
 
-**Kod:**
+Implementation:
 ```tsx
-// app/login/page.tsx
 const onSubmit = async (data: LoginInput) => {
-  const response = await authApi.login(data); // { accessToken, expiresAt }
-  login(response.accessToken, { email: data.email, ... });
+  const response = await authApi.login(data);
+  login(response.accessToken, { userName: data.userName, ... });
   router.push("/todos");
 };
 ```
 
-### 3. Korumalı Sayfa (/todos)
+### 3. Protected Routes
 
-**AuthGuard:**
+AuthGuard component ensures authentication:
+
 ```tsx
-// components/auth-guard.tsx
 export function AuthGuard({ children }) {
   const { isAuthenticated, initAuth } = useAuthStore();
   
   useEffect(() => {
-    initAuth(); // localStorage'dan token'ı yükle
+    initAuth(); // Load token from localStorage
   }, []);
   
   useEffect(() => {
-    if (!isAuthenticated) router.push("/login"); // Login yoksa yönlendir
+    if (!isAuthenticated) router.push("/login");
   }, [isAuthenticated]);
   
   if (!isAuthenticated) return null;
@@ -277,52 +266,50 @@ export function AuthGuard({ children }) {
 }
 ```
 
-**Kullanımı:**
+Usage:
 ```tsx
-// app/todos/page.tsx
 export default function TodosPage() {
   return (
     <AuthGuard>
-      <TodosContent /> {/* Sadece login varsa gösterir */}
+      <TodosContent />
     </AuthGuard>
   );
 }
 ```
 
-### 4. Todo Listeleme
+### 4. Fetching Todos
 
-**TanStack Query:**
+Using TanStack Query:
 ```tsx
 const { data: todos, isLoading } = useQuery({
   queryKey: ["todos"],
   queryFn: todoApi.getAll, // GET /api/todo
 });
-
-if (isLoading) return <p>Yükleniyor...</p>;
-return todos.map(todo => <TodoItem key={todo.todoId} todo={todo} />);
+```
+});
 ```
 
-**Axios Interceptor (Otomatik Token Ekleme):**
+Automatic token injection via Axios interceptor:
 ```tsx
 // lib/api-client.ts
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`; // Her istekte ekle
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 ```
 
-### 5. Todo Oluşturma
+### 5. Creating Todos
 
-**Mutation:**
+Using mutations:
 ```tsx
 const createMutation = useMutation({
   mutationFn: todoApi.create,
   onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ["todos"] }); // Liste'yi yenile
-    reset(); // Formu temizle
+    queryClient.invalidateQueries({ queryKey: ["todos"] });
+    reset();
   },
 });
 
@@ -331,35 +318,38 @@ const onSubmit = (data) => {
 };
 ```
 
-### 6. Todo Toggle (Tamamla)
+### 6. Toggle Todo Completion
 
 ```tsx
 const toggleMutation = useMutation({
   mutationFn: todoApi.toggle,
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ["todos"] });
+  onSuccess: (data) => {
+    queryClient.setQueryData(["todos"], (old) => {
+      return old.map(todo => 
+        todo.todoId === data.todoId ? data : todo
+      );
+    });
   },
 });
 
 <input
   type="checkbox"
   checked={todo.isCompleted}
-  onChange={() => toggleMutation.mutate(todo.todoId)} // PATCH /api/todo/{id}/toggle
+  onChange={() => toggleMutation.mutate(todo.todoId)}
 />
 ```
 
-### 7. 401 Hatası (Token Süresi Doldu)
+### 7. Automatic Logout on 401
 
-**Axios Response Interceptor:**
+Axios response interceptor handles expired tokens:
 ```tsx
-// lib/api-client.ts
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      window.location.href = "/login"; // Otomatik logout
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }
@@ -368,64 +358,99 @@ apiClient.interceptors.response.use(
 
 ---
 
-## 🎨 Tailwind CSS Kullanımı
+## Styling with Tailwind CSS
 
-Tailwind, utility-class'lar kullanır. Örnek:
+Tailwind uses utility classes for rapid UI development:
+
 ```tsx
 <div className="bg-blue-500 text-white p-4 rounded-lg hover:bg-blue-600">
-  {/* 
-    bg-blue-500: Mavi arka plan
-    text-white: Beyaz metin
+  {/*
+    bg-blue-500: Blue background
+    text-white: White text
     p-4: 1rem padding (16px)
-    rounded-lg: Kenarları yuvarlat
-    hover:bg-blue-600: Üzerine gelince koyu mavi
+    rounded-lg: Rounded corners
+    hover:bg-blue-600: Darker blue on hover
   */}
-  Merhaba!
+  Hello World
 </div>
 ```
 
 ---
 
-## 🔐 Güvenlik Notları
+## Security Considerations
 
-1. **JWT Token localStorage'da**: Basit ama XSS'e açık. Prod'da httpOnly cookie düşün.
-2. **HTTPS**: Production'da mutlaka HTTPS kullan.
-3. **CORS**: Backend'de sadece güvendiğin origin'lere izin ver.
-4. **Environment Variables**: `.env.local` Git'e commit edilmemeli (.gitignore'da var).
+1. **Token Storage**: Currently using localStorage. Consider httpOnly cookies for production.
+2. **HTTPS**: Always use HTTPS in production environments.
+3. **CORS**: Backend should only allow trusted origins.
+4. **Environment Variables**: Never commit `.env.local` to version control.
+5. **Input Validation**: Both client-side (Zod) and server-side validation implemented.
 
 ---
 
-## 🚀 Production Build
+## Production Build
 
 ```bash
+# Build for production
 npm run build
+
+# Start production server
 npm start
 ```
-Build edilen dosyalar `.next/` klasöründe olur.
+
+The optimized build will be created in the `.next` directory.
 
 ---
 
-## 📝 Sonraki Adımlar
+## API Endpoints
 
-1. **Swagger Entegrasyonu**: Backend'den otomatik tip üretimi
-2. **Error Handling**: Global error boundary
-3. **Loading States**: Skeleton loaders
-4. **Dark Mode**: Tailwind dark mode
-5. **Testing**: Jest + React Testing Library
-6. **Deploy**: Vercel, Netlify veya Azure
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+
+### Todos (Protected)
+- `GET /api/todo` - Get all todos
+- `GET /api/todo/{id}` - Get todo by ID
+- `POST /api/todo` - Create new todo
+- `PUT /api/todo/{id}` - Update todo
+- `PATCH /api/todo/{id}/toggle` - Toggle completion status
+- `DELETE /api/todo/{id}` - Delete todo
 
 ---
 
-## 🆘 Yardım
+## Development Workflow
 
-- [Next.js Dokümantasyon](https://nextjs.org/docs)
+1. Start backend: `cd TodoApp.API && dotnet run`
+2. Start frontend: `cd TodoApp.Web && npm run dev`
+3. Access application at `http://localhost:3000`
+4. API available at `http://localhost:5186`
+
+---
+
+## Future Enhancements
+
+- Swagger/OpenAPI integration for automatic type generation
+- Global error boundary implementation
+- Skeleton loading states
+- Dark mode support
+- Unit and integration tests
+- Deployment to cloud platforms (Azure, Vercel)
+- Real database implementation (SQL Server, PostgreSQL)
+- Email verification
+- Password reset functionality
+
+---
+
+## Resources
+
+- [Next.js Documentation](https://nextjs.org/docs)
 - [TanStack Query](https://tanstack.com/query/latest)
 - [Tailwind CSS](https://tailwindcss.com/docs)
 - [React Hook Form](https://react-hook-form.com/)
 - [Zod](https://zod.dev/)
+- [ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/)
 
 ---
 
-## 📄 Lisans
+## License
 
-Bu proje eğitim amaçlıdır.
+This project is for educational purposes.

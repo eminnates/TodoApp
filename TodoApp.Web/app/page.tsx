@@ -24,7 +24,7 @@ export default function HomePage() {
             className="group px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl hover:scale-105 transition-all"
           >
             <span className="flex items-center justify-center gap-2">
-              Giriş Yap
+              Sign In
               <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
@@ -34,7 +34,7 @@ export default function HomePage() {
             href="/register"
             className="px-8 py-3 bg-white text-gray-700 rounded-xl font-medium shadow-lg hover:shadow-xl hover:scale-105 transition-all border border-gray-200"
           >
-            Kayıt Ol
+            Sign Up
           </a>
         </div>
       </div>

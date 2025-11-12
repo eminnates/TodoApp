@@ -31,7 +31,7 @@ export default function RegisterPage() {
         router.push("/login");
       }, 2000);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Kayıt başarısız");
+      setError(err.response?.data?.message || "Registration failed");
     }
   };
 
@@ -45,7 +45,7 @@ export default function RegisterPage() {
             </svg>
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Kayıt Ol
+            Sign Up
           </h1>
         </div>
 
@@ -57,20 +57,20 @@ export default function RegisterPage() {
 
         {success && (
           <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl mb-6">
-            ✓ Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...
+            ✓ Registration successful! Redirecting to login page...
           </div>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Kullanıcı Adı
+              Username
             </label>
             <input
               {...register("userName")}
               type="text"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 transition-all"
-              placeholder="kullaniciadi"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 transition-all text-gray-900 placeholder-gray-400"
+              placeholder="username"
             />
             {errors.userName && (
               <p className="text-red-500 text-sm mt-2">{errors.userName.message}</p>
@@ -79,13 +79,13 @@ export default function RegisterPage() {
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Ad Soyad
+              Full Name
             </label>
             <input
               {...register("fullName")}
               type="text"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 transition-all"
-              placeholder="Ad Soyad"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 transition-all text-gray-900 placeholder-gray-400"
+              placeholder="John Doe"
             />
             {errors.fullName && (
               <p className="text-red-500 text-sm mt-2">{errors.fullName.message}</p>
@@ -94,12 +94,12 @@ export default function RegisterPage() {
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Şifre
+              Password
             </label>
             <input
               {...register("password")}
               type="password"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 transition-all"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 transition-all text-gray-900 placeholder-gray-400"
               placeholder="••••••"
             />
             {errors.password && (
@@ -109,12 +109,12 @@ export default function RegisterPage() {
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Şifre Tekrar
+              Confirm Password
             </label>
             <input
               {...register("confirmPassword")}
               type="password"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 transition-all"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 transition-all text-gray-900 placeholder-gray-400"
               placeholder="••••••"
             />
             {errors.confirmPassword && (
@@ -133,16 +133,16 @@ export default function RegisterPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                Kayıt yapılıyor...
+                Signing up...
               </span>
-            ) : "Kayıt Ol"}
+            ) : "Sign Up"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-gray-600">
-          Zaten hesabın var mı?{" "}
+          Already have an account?{" "}
           <a href="/login" className="text-purple-600 hover:text-purple-700 font-semibold hover:underline">
-            Giriş Yap
+            Sign In
           </a>
         </p>
       </div>

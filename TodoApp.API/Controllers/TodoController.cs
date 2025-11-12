@@ -118,30 +118,19 @@ namespace TodoApp.API.Controllers
             {
                 var existing = await _todoRepository.GetTodoByIdAsync(id);
                 if (existing.IsDeleted) return NotFound();
-                if (existing.UserId != userId) return Forbid(); // 403 Forbidden
+                if (existing.UserId != userId) return Forbid();
 
-                // Debug: Önceki değer
-                Console.WriteLine($"[Toggle] BEFORE - TodoId: {existing.TodoId}, IsCompleted: {existing.IsCompleted}");
-
-                // Toggle değerini değiştir (her zaman toggle yap, dto kullanma)
                 existing.IsCompleted = !existing.IsCompleted;
 
-                // Debug: Sonraki değer
-                Console.WriteLine($"[Toggle] AFTER - TodoId: {existing.TodoId}, IsCompleted: {existing.IsCompleted}");
-
-                // Kaydet
                 var ok = await _todoRepository.UpdateTodoAsync(existing);
                 if (!ok) return BadRequest(new { message = "Todo could not be toggled" });
                 
-                // Güncellenmiş entity'yi tekrar çek (fresh data)
                 var updated = await _todoRepository.GetTodoByIdAsync(id);
-                Console.WriteLine($"[Toggle] RESPONSE - TodoId: {updated.TodoId}, IsCompleted: {updated.IsCompleted}");
                 
                 return Ok(ToDto(updated));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"[Toggle] ERROR - {ex.Message}");
                 return NotFound();
             }
         }
