@@ -50,12 +50,19 @@ catch
 	}
 }
 
-// Add CORS - Next.js frontend için
+// Add CORS - Allow frontend origins
 builder.Services.AddCors(options =>
 {
 	options.AddPolicy("NextJsPolicy", policy =>
 	{
-		policy.WithOrigins("http://localhost:3000") // Next.js dev server
+		policy.WithOrigins(
+				"http://localhost:3000",
+				"http://localhost:3001",
+				// Add your Vercel deployment URL here when ready
+				// "https://your-app.vercel.app"
+				// Add your Railway URL if needed
+				Environment.GetEnvironmentVariable("FRONTEND_URL") ?? ""
+			)
 			.AllowAnyMethod()
 			.AllowAnyHeader()
 			.AllowCredentials();
@@ -122,6 +129,10 @@ builder.Services.AddScoped<ITodoRepository, TodoRepository>();
 
 var app = builder.Build();
 
+// Use PORT environment variable if available (Railway provides this)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+app.Urls.Add($"http://0.0.0.0:{port}");
+
 app.UseCors("NextJsPolicy");
 
 app.UseRouting();
@@ -130,5 +141,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Health check endpoint
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 
 app.Run();
