@@ -28,8 +28,9 @@ namespace TodoApp.API.Controllers
             try
             {
                 var created = await _authService.RegisterAsync(registerDto);
-                // No specific GET route for the created user, so return 201 with the DTO
-                return Created(string.Empty, created);
+                // Return a safe response without password fields
+                var response = new { username = created.Username, fullName = created.FullName };
+                return Created(string.Empty, response);
             }
             catch (InvalidOperationException ex)
             {

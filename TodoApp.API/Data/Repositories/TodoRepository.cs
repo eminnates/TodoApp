@@ -60,6 +60,7 @@ namespace TodoApp.API.Data.Repositories
             var existingTodo = await GetTodoByIdAsync(todo.TodoId);
             existingTodo.TodoContent = todo.TodoContent;
             existingTodo.IsCompleted = todo.IsCompleted;
+            existingTodo.DueDate = todo.DueDate;
             return await _context.SaveChangesAsync() > 0;
         }
     }
