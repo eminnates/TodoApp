@@ -55,14 +55,27 @@ builder.Services.AddCors(options =>
 {
 	options.AddPolicy("NextJsPolicy", policy =>
 	{
-		policy.WithOrigins(
-				"http://localhost:3000",
-				"http://localhost:3001",
-				// Add your Vercel deployment URL here when ready
-				// "https://your-app.vercel.app"
-				// Add your Railway URL if needed
-				Environment.GetEnvironmentVariable("FRONTEND_URL") ?? ""
-			)
+		var allowedOrigins = new List<string>
+		{
+			"http://localhost:3000",
+			"http://localhost:3001"
+		};
+
+		// Add Vercel URL from environment variable
+		var vercelUrl = Environment.GetEnvironmentVariable("VERCEL_URL");
+		if (!string.IsNullOrEmpty(vercelUrl))
+		{
+			allowedOrigins.Add(vercelUrl);
+		}
+
+		// Add custom frontend URL from environment variable
+		var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL");
+		if (!string.IsNullOrEmpty(frontendUrl))
+		{
+			allowedOrigins.Add(frontendUrl);
+		}
+
+		policy.WithOrigins(allowedOrigins.ToArray())
 			.AllowAnyMethod()
 			.AllowAnyHeader()
 			.AllowCredentials();
