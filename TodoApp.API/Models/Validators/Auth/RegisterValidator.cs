@@ -10,6 +10,14 @@ namespace TodoApp.API.Models.Validators.Auth
             RuleFor(x => x.FullName)
                 .NotEmpty()
                 .MaximumLength(50);
+            RuleFor(x => x.Username)
+                .NotEmpty().WithMessage("Username is required.")
+                .MinimumLength(3).WithMessage("Username must be at least 3 characters.")
+                .MaximumLength(20).WithMessage("Username must not exceed 20 characters.")
+                .Matches("^[a-zA-Z0-9_]+$").WithMessage("Username can only contain letters, numbers and underscores.");
+            RuleFor(x => x.ConfirmPassword)
+                .NotEmpty().WithMessage("Confirm password is required.")
+                .Equal(x => x.Password).WithMessage("Passwords do not match.");
             RuleFor(x => x.Password)
                 .NotEmpty()
                 .MinimumLength(6)

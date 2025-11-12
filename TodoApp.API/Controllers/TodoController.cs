@@ -48,7 +48,8 @@ namespace TodoApp.API.Controllers
             try
             {
                 var todo = await _todoRepository.GetTodoByIdAsync(id);
-                if (todo.UserId != userId || todo.IsDeleted) return NotFound();
+                if (todo.IsDeleted) return NotFound();
+                if (todo.UserId != userId) return Forbid(); // 403 Forbidden
                 return Ok(ToDto(todo));
             }
             catch (Exception)
@@ -89,7 +90,8 @@ namespace TodoApp.API.Controllers
             try
             {
                 var existing = await _todoRepository.GetTodoByIdAsync(id);
-                if (existing.UserId != userId || existing.IsDeleted) return NotFound();
+                if (existing.IsDeleted) return NotFound();
+                if (existing.UserId != userId) return Forbid(); // 403 Forbidden
 
                 existing.TodoContent = dto.TodoContent;
                 existing.DueDate = dto.DueDate;
@@ -114,7 +116,8 @@ namespace TodoApp.API.Controllers
             try
             {
                 var existing = await _todoRepository.GetTodoByIdAsync(id);
-                if (existing.UserId != userId || existing.IsDeleted) return NotFound();
+                if (existing.IsDeleted) return NotFound();
+                if (existing.UserId != userId) return Forbid(); // 403 Forbidden
 
                 if (dto is null)
                     existing.IsCompleted = !existing.IsCompleted;
@@ -140,7 +143,8 @@ namespace TodoApp.API.Controllers
             try
             {
                 var existing = await _todoRepository.GetTodoByIdAsync(id);
-                if (existing.UserId != userId || existing.IsDeleted) return NotFound();
+                if (existing.IsDeleted) return NotFound();
+                if (existing.UserId != userId) return Forbid(); // 403 Forbidden
 
                 var ok = await _todoRepository.DeleteTodoAsync(id);
                 if (!ok) return BadRequest(new { message = "Todo could not be deleted" });
