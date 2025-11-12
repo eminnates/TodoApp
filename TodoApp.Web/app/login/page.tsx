@@ -33,7 +33,10 @@ export default function LoginPage() {
         fullName: "",
       });
       
-      router.push("/todos");
+      // State güncellemesi için küçük bir gecikme
+      setTimeout(() => {
+        router.push("/todos");
+      }, 100);
     } catch (err: any) {
       setError(err.response?.data?.message || "Login failed");
     }
