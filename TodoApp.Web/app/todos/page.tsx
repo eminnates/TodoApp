@@ -21,6 +21,8 @@ function TodosContent() {
   const { user, logout } = useAuthStore();
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingContent, setEditingContent] = useState<string>("");
+  const [editingDueDate, setEditingDueDate] = useState<string>("");
 
   // Tüm todoları getir
   const { data: todos, isLoading } = useQuery({
@@ -84,12 +86,20 @@ function TodosContent() {
 
   const handleEdit = (todo: Todo) => {
     setEditingId(todo.todoId);
+    setEditingContent(todo.todoContent);
+    setEditingDueDate(todo.dueDate || "");
   };
 
-  const handleUpdate = (id: number, content: string) => {
+  const handleUpdate = (id: number, content: string, dueDate: string) => {
+    const updateData: TodoInput = { 
+      todoContent: content,
+    };
+    if (dueDate) {
+      updateData.dueDate = dueDate;
+    }
     updateMutation.mutate({
       id,
-      data: { todoContent: content },
+      data: updateData,
     });
   };
 
@@ -227,20 +237,45 @@ function TodosContent() {
                   />
 
                   {editingId === todo.todoId ? (
-                    <input
-                      type="text"
-                      defaultValue={todo.todoContent}
-                      placeholder="Todo content..."
-                      onBlur={(e) => handleUpdate(todo.todoId, e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleUpdate(todo.todoId, e.currentTarget.value);
-                        }
-                        if (e.key === "Escape") setEditingId(null);
-                      }}
-                      className="flex-1 px-3 py-2 border-2 border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400"
-                      autoFocus
-                    />
+                    <div className="flex-1 flex gap-2">
+                      <input
+                        type="text"
+                        value={editingContent}
+                        onChange={(e) => setEditingContent(e.target.value)}
+                        placeholder="Todo content..."
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleUpdate(todo.todoId, editingContent, editingDueDate);
+                          }
+                          if (e.key === "Escape") setEditingId(null);
+                        }}
+                        className="flex-1 px-3 py-2 border-2 border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400"
+                      />
+                      <input
+                        type="datetime-local"
+                        value={editingDueDate}
+                        onChange={(e) => setEditingDueDate(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleUpdate(todo.todoId, editingContent, editingDueDate);
+                          }
+                          if (e.key === "Escape") setEditingId(null);
+                        }}
+                        className="px-3 py-2 border-2 border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      />
+                      <button
+                        onClick={() => handleUpdate(todo.todoId, editingContent, editingDueDate)}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm font-medium"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   ) : (
                     <span
                       onClick={() => handleEdit(todo)}
