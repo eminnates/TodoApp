@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 using TodoApp.API.Data.Repositories;
 using TodoApp.API.Models.Entities;
 using TodoApp.API.Services;
@@ -21,6 +22,13 @@ try
 {
 	// First try default lookup (searches current directory and parents)
 	Env.Load();
+
+	// Also try explicit content root path to avoid cwd issues
+	var explicitEnvPath = Path.Combine(builder.Environment.ContentRootPath, ".env");
+	if (File.Exists(explicitEnvPath))
+	{
+		Env.Load(explicitEnvPath);
+	}
 }
 catch
 {
@@ -87,9 +95,46 @@ builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-// Configure EF Core - use in-memory DB for local/dev. Replace with real DB in production.
-builder.Services.AddDbContext<TodoApp.API.Data.DbContext>(options =>
-	options.UseInMemoryDatabase("TodoAppDb"));
+// Configure EF Core - use PostgreSQL (Neon). Prefer DATABASE_URL env var first.
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+
+if (string.IsNullOrWhiteSpace(databaseUrl))
+{
+	// Fallback: InMemory DB for local development
+	builder.Services.AddDbContext<TodoApp.API.Data.DbContext>(options =>
+		options.UseInMemoryDatabase("TodoAppDb"));
+	Console.WriteLine("⚠️  DATABASE_URL not set. Using InMemory Database for development.");
+}
+else
+{
+	// Parse DATABASE_URL (postgres:// URI format)
+	string ParseDatabaseUrl(string url)
+	{
+		var uri = new Uri(url);
+		var userInfo = uri.UserInfo.Split(':', 2);
+		var username = Uri.UnescapeDataString(userInfo.ElementAtOrDefault(0) ?? string.Empty);
+		var password = Uri.UnescapeDataString(userInfo.ElementAtOrDefault(1) ?? string.Empty);
+		var database = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/'));
+
+		var connBuilder = new NpgsqlConnectionStringBuilder
+		{
+			Host = uri.Host,
+			Port = uri.Port > 0 ? uri.Port : 5432,
+			Database = database,
+			Username = username,
+			Password = password,
+			SslMode = SslMode.Require
+		};
+
+		return connBuilder.ConnectionString;
+	}
+
+	var connectionString = ParseDatabaseUrl(databaseUrl);
+
+	builder.Services.AddDbContext<TodoApp.API.Data.DbContext>(options =>
+		options.UseNpgsql(connectionString));
+	Console.WriteLine("✓ Using PostgreSQL (Neon) from DATABASE_URL.");
+}
 
 // Configure Identity
 builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
