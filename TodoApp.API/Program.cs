@@ -66,7 +66,8 @@ builder.Services.AddCors(options =>
 		var allowedOrigins = new List<string>
 		{
 			"http://localhost:3000",
-			"http://localhost:3001"
+			"http://localhost:3001",
+			"https://todo-app-orpin-psi.vercel.app"
 		};
 
 		// Add Vercel URL from environment variable
