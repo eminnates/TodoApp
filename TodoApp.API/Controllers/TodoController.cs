@@ -65,10 +65,15 @@ namespace TodoApp.API.Controllers
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
+            // Convert DueDate to UTC if it has a value
+            DateTime? dueDate = dto.DueDate.HasValue 
+                ? DateTime.SpecifyKind(dto.DueDate.Value, DateTimeKind.Utc)
+                : null;
+
             var entity = new Todo
             {
                 TodoContent = dto.TodoContent,
-                DueDate = dto.DueDate,
+                DueDate = dueDate,
                 UserId = userId,
                 IsCompleted = false,
                 IsDeleted = false,
@@ -95,7 +100,11 @@ namespace TodoApp.API.Controllers
                 if (existing.UserId != userId) return Forbid(); // 403 Forbidden
 
                 existing.TodoContent = dto.TodoContent;
-                existing.DueDate = dto.DueDate;
+                
+                // Convert DueDate to UTC if it has a value
+                existing.DueDate = dto.DueDate.HasValue 
+                    ? DateTime.SpecifyKind(dto.DueDate.Value, DateTimeKind.Utc)
+                    : null;
                 // keep IsCompleted as-is during content/date update
 
                 var ok = await _todoRepository.UpdateTodoAsync(existing);
