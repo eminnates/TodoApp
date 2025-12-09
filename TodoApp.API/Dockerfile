@@ -3,12 +3,11 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy csproj and restore dependencies
-COPY ["TodoApp.API/TodoApp.API.csproj", "TodoApp.API/"]
-RUN dotnet restore "TodoApp.API/TodoApp.API.csproj"
+COPY ["TodoApp.API.csproj", "./"]
+RUN dotnet restore "TodoApp.API.csproj"
 
 # Copy everything else and build
 COPY . .
-WORKDIR "/src/TodoApp.API"
 RUN dotnet build "TodoApp.API.csproj" -c Release -o /app/build
 
 # Publish stage
