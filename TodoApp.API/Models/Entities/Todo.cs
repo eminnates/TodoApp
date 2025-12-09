@@ -19,6 +19,6 @@ namespace TodoApp.API.Models.Entities
 
         public DateTime? DueDate { get; set; }
 
-        public AppUser AppUser { get; set; }
+        public AppUser? AppUser { get; set; }
     }
 }

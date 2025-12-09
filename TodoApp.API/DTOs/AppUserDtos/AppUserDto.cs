@@ -2,7 +2,7 @@
 {
     public class AppUserDto
     {
-        public string FullName { get; set; }
+        public required string FullName { get; set; }
         public int TodoPoints { get; set; }
     }
 }
