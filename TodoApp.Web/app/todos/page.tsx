@@ -33,6 +33,7 @@ function TodosContent() {
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
+  const [dragOverCategoryId, setDragOverCategoryId] = useState<number | null>(null);
   const [editingCategoryHeaderId, setEditingCategoryHeaderId] = useState<number | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState<string>("");
   const [isPageLoaded, setIsPageLoaded] = useState(false);
@@ -413,11 +414,41 @@ function TodosContent() {
                       <button onClick={() => setEditingCategoryHeaderId(null)} className="px-2 py-1 text-sm rounded bg-[#D9CFC0] text-[#6B5E52]">✗</button>
                     </div>
                   ) : (
-                    <div className="mb-4 pl-2" style={{ position: 'relative', display: 'inline-block' }}>
+                    <div 
+                      className="mb-4 pl-2" 
+                      style={{ position: 'relative', display: 'inline-block' }}
+                      onDragOver={(e) => {
+                        if (!draggingId) return;
+                        e.preventDefault();
+                        setDragOverCategoryId(category.categoryId);
+                      }}
+                      onDragLeave={() => {
+                        setDragOverCategoryId(null);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (!draggingId) return;
+                        const sourceTodo = todos?.find(t => t.todoId === draggingId);
+                        if (sourceTodo) {
+                          const updateData: TodoInput = {
+                            todoContent: sourceTodo.todoContent,
+                            priority: sourceTodo.priority ?? Priority.Medium,
+                            categoryId: category.categoryId,
+                          };
+                          if (sourceTodo.dueDate) updateData.dueDate = sourceTodo.dueDate;
+                          updateMutation.mutate({ id: draggingId, data: updateData });
+                        }
+                        setDragOverCategoryId(null);
+                        setDraggingId(null);
+                      }}
+                    >
                         {/* VIEW MODE: REVERTED TO Playfair Display (Original/Clean) */}
-                        <h3 className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity" 
-                            style={{ color: '#6B5E52', fontFamily: '\'Playfair Display\', serif', fontSize: '1.5rem', fontWeight: 'bold' }} // Eski haline döndü
-                            onClick={() => handleEditCategory(category.categoryId, category.name)}>
+                        <h3 
+                          className={`flex items-center gap-2 cursor-pointer hover:opacity-70 transition-all ${
+                            dragOverCategoryId === category.categoryId ? 'opacity-70 scale-105' : ''
+                          }`}
+                          style={{ color: '#6B5E52', fontFamily: '\'Playfair Display\', serif', fontSize: '1.5rem', fontWeight: 'bold' }} // Eski haline döndü
+                          onClick={() => handleEditCategory(category.categoryId, category.name)}>
                           {category.icon && <span className="text-xl">{category.icon}</span>} {category.name}
                         </h3>
                         {/* Alt çizgi (düz) */}
@@ -427,8 +458,16 @@ function TodosContent() {
 
                   <div className="space-y-1 pl-4">
                     {todos?.filter((t) => t.categoryId === category.categoryId).map((todo) => (
-                      <div key={todo.todoId} className={`group relative flex items-center gap-2 py-2 px-3 rounded-lg transition-all ${todo.isCompleted ? 'opacity-60' : ''}`}
-                        style={{ backgroundColor: '#FFFEF9' }} draggable onDragStart={() => setDraggingId(todo.todoId)} onDragEnd={() => { setDraggingId(null); setDragOverId(null); }}
+                      <div key={todo.todoId} className={`group relative flex items-center gap-2 py-2 px-3 rounded-lg transition-all ${todo.isCompleted ? 'opacity-60' : ''} ${dragOverId === todo.todoId ? 'ring-2 ring-[#B5A495] shadow-lg' : ''}`}
+                        style={{ backgroundColor: '#FFFEF9' }} 
+                        draggable 
+                        onDragStart={() => setDraggingId(todo.todoId)} 
+                        onDragEnd={() => { setDraggingId(null); setDragOverId(null); }}
+                        onDragOver={(e) => {
+                          if (!draggingId || draggingId === todo.todoId) return;
+                          e.preventDefault();
+                          setDragOverId(todo.todoId);
+                        }}
                         onDrop={(e) => { e.preventDefault(); if (!draggingId || draggingId === todo.todoId) return; handleCombineIntoCategory(draggingId, todo.todoId); setDragOverId(null); setDraggingId(null); }}
                       >
                         <span className="text-2xl" style={{ color: '#6B5E52', marginRight: '8px', zIndex: 1 }}>–</span>
