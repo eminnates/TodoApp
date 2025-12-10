@@ -2,8 +2,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TodoApp.API.Data.Repositories;
+using TodoApp.API.DTOs.CategoryDtos;
 using TodoApp.API.DTOs.TodoDtos;
 using TodoApp.API.Models.Entities;
+using TodoApp.API.Models.Enums;
 
 namespace TodoApp.API.Controllers
 {
@@ -13,10 +15,12 @@ namespace TodoApp.API.Controllers
     public class TodoController : ControllerBase
     {
         private readonly ITodoRepository _todoRepository;
+        private readonly ICategoryRepository _categoryRepository;
 
-        public TodoController(ITodoRepository todoRepository)
+        public TodoController(ITodoRepository todoRepository, ICategoryRepository categoryRepository)
         {
             _todoRepository = todoRepository;
+            _categoryRepository = categoryRepository;
         }
 
         private string? GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -27,7 +31,18 @@ namespace TodoApp.API.Controllers
             TodoContent = t.TodoContent,
             IsCompleted = t.IsCompleted,
             CreatedAt = t.CreatedAt,
-            DueDate = t.DueDate
+            DueDate = t.DueDate,
+            Priority = t.Priority,
+            CategoryId = t.CategoryId,
+            Category = t.Category == null ? null : new CategoryDto
+            {
+                CategoryId = t.Category.CategoryId,
+                Name = t.Category.Name,
+                Color = t.Category.Color,
+                Icon = t.Category.Icon,
+                CreatedAt = t.Category.CreatedAt,
+                TodoCount = 0
+            }
         };
 
         [HttpGet]
@@ -65,6 +80,12 @@ namespace TodoApp.API.Controllers
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
+            if (dto.CategoryId.HasValue)
+            {
+                var exists = await _categoryRepository.CategoryExistsAsync(dto.CategoryId.Value, userId);
+                if (!exists) return BadRequest(new { message = "Category not found" });
+            }
+
             // Convert DueDate to UTC if it has a value
             DateTime? dueDate = dto.DueDate.HasValue 
                 ? DateTime.SpecifyKind(dto.DueDate.Value, DateTimeKind.Utc)
@@ -77,7 +98,9 @@ namespace TodoApp.API.Controllers
                 UserId = userId,
                 IsCompleted = false,
                 IsDeleted = false,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                Priority = dto.Priority,
+                CategoryId = dto.CategoryId
             };
 
             var created = await _todoRepository.CreateTodoAsync(entity);
@@ -93,6 +116,12 @@ namespace TodoApp.API.Controllers
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
+            if (dto.CategoryId.HasValue)
+            {
+                var exists = await _categoryRepository.CategoryExistsAsync(dto.CategoryId.Value, userId);
+                if (!exists) return BadRequest(new { message = "Category not found" });
+            }
+
             try
             {
                 var existing = await _todoRepository.GetTodoByIdAsync(id);
@@ -106,6 +135,8 @@ namespace TodoApp.API.Controllers
                     ? DateTime.SpecifyKind(dto.DueDate.Value, DateTimeKind.Utc)
                     : null;
                 // keep IsCompleted as-is during content/date update
+                existing.Priority = dto.Priority;
+                existing.CategoryId = dto.CategoryId;
 
                 var ok = await _todoRepository.UpdateTodoAsync(existing);
                 if (!ok) return BadRequest(new { message = "Todo could not be updated" });

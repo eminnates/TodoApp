@@ -1,4 +1,6 @@
 import { apiClient } from "@/lib/api-client";
+import { Category } from "@/lib/types/category";
+import { Priority } from "@/lib/types/priority";
 import { TodoInput } from "@/lib/validations/todo";
 
 export interface Todo {
@@ -7,6 +9,9 @@ export interface Todo {
   isCompleted: boolean;
   createdAt: string;
   dueDate?: string;
+   priority: Priority;
+   categoryId?: number;
+   category?: Category;
 }
 
 export const todoApi = {

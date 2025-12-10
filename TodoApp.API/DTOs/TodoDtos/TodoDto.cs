@@ -1,4 +1,7 @@
-﻿namespace TodoApp.API.DTOs.TodoDtos
+﻿using TodoApp.API.DTOs.CategoryDtos;
+using TodoApp.API.Models.Enums;
+
+namespace TodoApp.API.DTOs.TodoDtos
 {
     public class TodoDto
     {
@@ -7,6 +10,9 @@
         public bool IsCompleted { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? DueDate { get; set; }
+        public Priority Priority { get; set; }
+        public int? CategoryId { get; set; }
+        public CategoryDto? Category { get; set; }
     }
 
 }

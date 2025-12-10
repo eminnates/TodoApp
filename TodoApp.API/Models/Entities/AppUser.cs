@@ -8,5 +8,8 @@ namespace TodoApp.API.Models.Entities
         public int? TodoPoints { get; set; } = 0;
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public ICollection<Category>? Categories { get; set; }
+        public ICollection<Todo>? Todos { get; set; }
     }
 }

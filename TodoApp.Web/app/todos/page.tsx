@@ -1,13 +1,19 @@
 "use client";
 
 import { AuthGuard } from "@/components/auth-guard";
-import { useAuthStore } from "@/store/auth-store";
+import { CategoryBadge } from "@/components/category-badge";
+import { CategoryManager } from "@/components/category-manager";
+import { CategorySelector } from "@/components/category-selector";
+import { PriorityBadge } from "@/components/priority-badge";
+import { categoryApi } from "@/lib/api/category";
 import { todoApi, Todo } from "@/lib/api/todo";
+import { Priority } from "@/lib/types/priority";
+import { todoSchema, TodoInput } from "@/lib/validations/todo";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { todoSchema, TodoInput } from "@/lib/validations/todo";
+import { useAuthStore } from "@/store/auth-store";
 
 export default function TodosPage() {
   return (
@@ -23,6 +29,27 @@ function TodosContent() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState<string>("");
   const [editingDueDate, setEditingDueDate] = useState<string>("");
+  const [editingPriority, setEditingPriority] = useState<Priority>(Priority.Medium);
+  const [editingCategoryId, setEditingCategoryId] = useState<number | undefined>(undefined);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [dragOverId, setDragOverId] = useState<number | null>(null);
+  const [editingCategoryHeaderId, setEditingCategoryHeaderId] = useState<number | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState<string>("");
+
+  const categoryPalette = [
+    "#6366F1", // indigo-500
+    "#22C55E", // green-500
+    "#F97316", // orange-500
+    "#0EA5E9", // sky-500
+    "#EC4899", // pink-500
+    "#F59E0B", // amber-500
+  ];
+
+  const { data: categories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: categoryApi.getAll,
+  });
 
   // Tüm todoları getir
   const { data: todos, isLoading } = useQuery({
@@ -71,14 +98,100 @@ function TodosContent() {
     },
   });
 
+  // Kategori güncelle
+  const updateCategoryMutation = useMutation({
+    mutationFn: ({ id, name }: { id: number; name: string }) => {
+      const category = categories?.find((c) => c.categoryId === id);
+      if (!category) throw new Error("Category not found");
+      return categoryApi.update(id, {
+        categoryId: id,
+        name,
+        color: category.color,
+        icon: category.icon,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+      setEditingCategoryHeaderId(null);
+    },
+  });
+
+  const groupMutation = useMutation({
+    mutationFn: async ({ sourceId, targetId }: { sourceId: number; targetId: number }) => {
+      if (!todos) throw new Error("Todos are not loaded yet");
+
+      const source = todos.find((todo) => todo.todoId === sourceId);
+      const target = todos.find((todo) => todo.todoId === targetId);
+
+      if (!source || !target) throw new Error("Todo not found for grouping");
+
+      const takeTwoWords = (text: string) =>
+        text
+          .trim()
+          .split(/\s+/)
+          .slice(0, 2)
+          .join(" ");
+
+      const newCategory = await categoryApi.create({
+        name: `${takeTwoWords(source.todoContent)} + ${takeTwoWords(target.todoContent)}`,
+        color: categoryPalette[(sourceId + targetId) % categoryPalette.length],
+      });
+
+      const toInput = (todo: Todo): TodoInput => ({
+        todoContent: todo.todoContent,
+        priority: todo.priority ?? Priority.Medium,
+        ...(todo.dueDate ? { dueDate: todo.dueDate } : {}),
+        categoryId: newCategory.categoryId,
+      });
+
+      await Promise.all([
+        todoApi.update(source.todoId, toInput(source)),
+        todoApi.update(target.todoId, toInput(target)),
+      ]);
+
+      return newCategory;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+  });
+
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<TodoInput>({
     resolver: zodResolver(todoSchema),
+    defaultValues: {
+      priority: Priority.Medium,
+      categoryId: undefined,
+    },
   });
+
+  const watchedPriority = watch("priority", Priority.Medium);
+  const watchedCategoryId = watch("categoryId");
+  const watchedDueDate = watch("dueDate", "");
+
+  const computePriorityFromDueDate = (dueDate?: string): Priority => {
+    if (!dueDate) return Priority.Low;
+    const due = new Date(dueDate).getTime();
+    if (Number.isNaN(due)) return Priority.Low;
+    const now = Date.now();
+    const diffHours = (due - now) / (1000 * 60 * 60);
+    if (diffHours <= 24) return Priority.Urgent;
+    if (diffHours <= 72) return Priority.High;
+    return Priority.Medium;
+  };
+
+  useEffect(() => {
+    const autoPriority = computePriorityFromDueDate(watchedDueDate);
+    setValue("priority", autoPriority, { shouldValidate: false, shouldDirty: true });
+  }, [watchedDueDate, setValue]);
 
   const onSubmit = (data: TodoInput) => {
     createMutation.mutate(data);
@@ -87,15 +200,27 @@ function TodosContent() {
   const handleEdit = (todo: Todo) => {
     setEditingId(todo.todoId);
     setEditingContent(todo.todoContent);
-    setEditingDueDate(todo.dueDate || "");
+    setEditingDueDate(todo.dueDate ? new Date(todo.dueDate).toISOString().slice(0, 16) : "");
+    setEditingPriority(todo.priority ?? Priority.Medium);
+    setEditingCategoryId(todo.categoryId ?? undefined);
   };
 
-  const handleUpdate = (id: number, content: string, dueDate: string) => {
+  const handleUpdate = (
+    id: number,
+    content: string,
+    dueDate: string,
+    priority: Priority,
+    categoryId?: number
+  ) => {
     const updateData: TodoInput = { 
       todoContent: content,
+      priority,
     };
     if (dueDate) {
       updateData.dueDate = dueDate;
+    }
+    if (categoryId) {
+      updateData.categoryId = categoryId;
     }
     updateMutation.mutate({
       id,
@@ -103,27 +228,77 @@ function TodosContent() {
     });
   };
 
+  const handleCombineIntoCategory = (sourceId: number, targetId: number) => {
+    console.log("handleCombineIntoCategory called", { sourceId, targetId, isPending: groupMutation.isPending });
+    if (sourceId === targetId || groupMutation.isPending) return;
+    
+    // Check if target already has a category
+    const targetTodo = todos?.find(t => t.todoId === targetId);
+    if (targetTodo?.categoryId) {
+      // Assign source todo to target's category instead of creating new one
+      const sourceTodo = todos?.find(t => t.todoId === sourceId);
+      if (sourceTodo) {
+        const updateData: TodoInput = {
+          todoContent: sourceTodo.todoContent,
+          priority: sourceTodo.priority ?? Priority.Medium,
+          categoryId: targetTodo.categoryId,
+        };
+        if (sourceTodo.dueDate) {
+          updateData.dueDate = sourceTodo.dueDate;
+        }
+        updateMutation.mutate({ id: sourceId, data: updateData });
+      }
+      return;
+    }
+    
+    console.log("Calling groupMutation.mutate");
+    groupMutation.mutate({ sourceId, targetId });
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100">
+    <div className="min-h-screen" style={{
+      background: 'linear-gradient(to bottom, #FAF8F3 0%, #F5F0E8 50%, #F0EBE0 100%)',
+      fontFamily: '\'Courier New\', Courier, monospace',
+    }}>
+      {/* Header - Vintage Notebook Style */}
+      <div className="shadow-md border-b-4" style={{
+        backgroundColor: '#B5A495',
+        borderColor: '#9B8A7C',
+        backgroundImage: 'linear-gradient(90deg, rgba(155, 138, 124, 0.1) 0px, transparent 1px), linear-gradient(rgba(155, 138, 124, 0.1) 0px, transparent 1px)',
+        backgroundSize: '20px 20px',
+      }}>
         <div className="max-w-5xl mx-auto px-4 py-5 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-lg" style={{
+              backgroundColor: '#E5DDD0',
+              border: '3px solid #B5A495',
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1), 0 3px 6px rgba(0,0,0,0.15)',
+            }}>
+              <svg className="w-7 h-7" fill="none" stroke="#6B5E52" strokeWidth={2.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Todo App</h1>
-              <p className="text-xs text-gray-500">Welcome, {user?.fullName || user?.userName}</p>
+              <h1 className="text-2xl font-bold" style={{
+                color: '#FFFEF9',
+                textShadow: '1px 1px 3px rgba(0,0,0,0.3)',
+                fontFamily: '\'Playfair Display\', serif',
+                letterSpacing: '1px',
+              }}>Leaf Note</h1>
+              <p className="text-sm" style={{ color: '#E5DDD0' }}>{user?.fullName || user?.userName}</p>
             </div>
           </div>
           <button
             onClick={() => logout()}
-            className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium text-sm"
+            className="px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg font-medium text-sm"
+            style={{
+              backgroundColor: '#D9CFC0',
+              color: '#6B5E52',
+              border: '2px solid #B5A495',
+              fontFamily: '\'Georgia\', serif',
+            }}
           >
-            Logout
+            Close Book
           </button>
         </div>
       </div>
@@ -131,12 +306,29 @@ function TodosContent() {
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Create Todo Form */}
-        <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg mb-6 border border-gray-100">
-          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add New Todo
+        <div className="p-6 rounded-xl shadow-2xl mb-6 border-4" style={{
+          backgroundColor: '#FFFEF9',
+          borderColor: '#D9CFC0',
+          backgroundImage: `
+            repeating-linear-gradient(
+              transparent,
+              transparent 31px,
+              rgba(217, 207, 192, 0.15) 31px,
+              rgba(217, 207, 192, 0.15) 32px
+            ),
+            linear-gradient(90deg, rgba(217, 207, 192, 0.25) 1px, transparent 1px)
+          `,
+          backgroundSize: '100% 32px, 40px 100%',
+          backgroundPosition: '0 8px, 20px 0',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.8)',
+        }}>
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2" style={{
+            color: '#6B5E52',
+            fontFamily: '\'Playfair Display\', serif',
+            letterSpacing: '0.5px',
+          }}>
+            <span style={{ fontSize: '1.5rem' }}>✎</span>
+            Write a New Task
           </h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
@@ -144,13 +336,26 @@ function TodosContent() {
                 {...register("todoContent")}
                 type="text"
                 placeholder="What do you need to do?"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 transition-all text-gray-800 placeholder-gray-400"
+                className="w-full px-4 py-3 border-b-2 focus:outline-none focus:border-b-3 transition-all"
+                style={{
+                  backgroundColor: 'transparent',
+                  borderColor: '#B5A495',
+                  color: '#4A4239',
+                  fontFamily: '\'Niconne\', cursive',
+                  fontSize: '1.3rem',
+                  borderTop: 'none',
+                  borderLeft: 'none',
+                  borderRight: 'none',
+                  borderRadius: 0,
+                }}
               />
               {errors.todoContent && (
-                <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
+                <p className="text-sm mt-2 flex items-center gap-1" style={{
+                  color: '#A8826B',
+                  fontFamily: '\'Courier New\', Courier, monospace',
+                  fontStyle: 'italic',
+                }}>
+                  <span>⚠</span>
                   {errors.todoContent.message}
                 </p>
               )}
@@ -159,12 +364,31 @@ function TodosContent() {
               <input
                 {...register("dueDate")}
                 type="datetime-local"
-                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 transition-all text-gray-900"
+                className="flex-1 px-4 py-3 border-2 rounded-lg focus:outline-none transition-all"
+                style={{
+                  backgroundColor: '#FFFEF9',
+                  borderColor: '#B5A495',
+                  color: '#4A4239',
+                  fontFamily: '\'Courier New\', Courier, monospace',
+                }}
+              />
+              <CategorySelector
+                categories={categories || []}
+                value={watchedCategoryId}
+                onChange={(value) => setValue("categoryId", value)}
+                className="flex-1"
               />
               <button
                 type="submit"
                 disabled={createMutation.isPending}
-                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: '#B5A495',
+                  color: '#FFFEF9',
+                  border: '3px solid #9B8A7C',
+                  fontFamily: '\'Georgia\', serif',
+                  letterSpacing: '1px',
+                }}
               >
                 {createMutation.isPending ? (
                   <span className="flex items-center gap-2">
@@ -172,14 +396,11 @@ function TodosContent() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Adding...
+                    Writing...
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add
+                    ✎ Add Task
                   </span>
                 )}
               </button>
@@ -188,18 +409,52 @@ function TodosContent() {
         </div>
 
         {/* Todos List */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-gray-100">
-          <h2 className="text-lg font-bold text-gray-800 mb-5 flex items-center justify-between">
+        <div className="rounded-2xl shadow-2xl p-6 border-4" style={{
+          backgroundColor: '#FFFEF9',
+          borderColor: '#B5A495',
+          backgroundImage: `
+            repeating-linear-gradient(
+              transparent,
+              transparent 31px,
+              rgba(217, 207, 192, 0.15) 31px,
+              rgba(217, 207, 192, 0.15) 32px
+            )
+          `,
+          backgroundSize: '100% 32px',
+          backgroundPosition: '0 8px',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.8)',
+        }}>
+          <h2 className="text-2xl font-bold mb-5 flex items-center justify-between" style={{
+            color: '#6B5E52',
+            fontFamily: '\'Playfair Display\', serif',
+          }}>
             <span className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              Todos
+              My Tasks
             </span>
-            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+            <span className="px-3 py-1 rounded-full text-sm font-semibold" style={{
+              backgroundColor: '#E5DDD0',
+              color: '#6B5E52',
+              border: '2px solid #B5A495',
+              fontFamily: '\'Georgia\', serif',
+            }}>
               {todos?.length || 0}
             </span>
           </h2>
+          <div className="flex justify-end mb-4">
+            <button
+              type="button"
+              onClick={() => setCategoryModalOpen(true)}
+              className="px-4 py-2 text-sm font-medium rounded-lg transition-all shadow-md hover:shadow-lg"
+              style={{
+                backgroundColor: '#D9CFC0',
+                color: '#6B5E52',
+                border: '2px solid #B5A495',
+                fontFamily: '\'Georgia\', serif',
+              }}
+            >
+              Organize Sections
+            </button>
+          </div>
 
           {isLoading ? (
             <div className="text-center py-12">
@@ -211,33 +466,374 @@ function TodosContent() {
             </div>
           ) : todos?.length === 0 ? (
             <div className="text-center py-12">
-              <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <p className="text-gray-500 text-lg">No todos yet</p>
-              <p className="text-gray-400 text-sm">Add a new todo above!</p>
+              <span style={{ fontSize: '4rem', opacity: 0.3 }}>📝</span>
+              <p className="text-lg mt-4" style={{ 
+                color: '#B5A495',
+                fontFamily: '\'Courier New\', Courier, monospace',
+              }}>No tasks yet...</p>
+              <p className="text-sm mt-2" style={{ 
+                color: '#C4B8A9',
+                fontFamily: '\'Georgia\', serif',
+                fontStyle: 'italic',
+              }}>Start writing above!</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {todos?.map((todo) => (
+            <div className="space-y-6">
+              {/* Uncategorized Todos */}
+              {todos?.filter((todo) => !todo.categoryId).length > 0 && (
+                <div className="space-y-2">
+                  {todos?.filter((todo) => !todo.categoryId).map((todo) => (
+                    <div
+                      key={todo.todoId}
+                      className={`group relative flex items-center gap-3 p-4 rounded-lg transition-all ${
+                        todo.isCompleted 
+                          ? 'opacity-60' 
+                          : 'hover:shadow-md'
+                      } ${
+                        draggingId === todo.todoId ? 'ring-2 shadow-lg' : ''
+                      } ${
+                        dragOverId === todo.todoId && draggingId !== todo.todoId
+                          ? 'ring-2 ring-dashed'
+                          : ''
+                      }`}
+                      style={{
+                        backgroundColor: '#FFFEF9',
+                      }}
+                      draggable
+                      onDragStart={(e) => {
+                        console.log("onDragStart", todo.todoId);
+                        setDraggingId(todo.todoId);
+                      }}
+                      onDragEnd={() => {
+                        console.log("onDragEnd");
+                        setDraggingId(null);
+                        setDragOverId(null);
+                      }}
+                      onDragOver={(e) => {
+                        if (!draggingId || draggingId === todo.todoId) return;
+                        e.preventDefault();
+                        console.log("onDragOver", { draggingId, targetId: todo.todoId });
+                        setDragOverId(todo.todoId);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        console.log("onDrop", { draggingId, targetId: todo.todoId });
+                        if (!draggingId || draggingId === todo.todoId) return;
+                        handleCombineIntoCategory(draggingId, todo.todoId);
+                        setDragOverId(null);
+                        setDraggingId(null);
+                      }}
+                      title="Drag onto another todo to auto-create a category"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={todo.isCompleted}
+                        onChange={() => toggleMutation.mutate(todo.todoId)}
+                        className="w-5 h-5 rounded-sm cursor-pointer transition-all"
+                        style={{
+                          accentColor: '#8B7355',
+                          border: '2px solid #8B7355',
+                          position: 'relative',
+                          zIndex: 1,
+                        }}
+                        title={todo.isCompleted ? "Mark as incomplete" : "Mark as complete"}
+                      />
+
+                      {editingId === todo.todoId ? (
+                        <div className="flex-1 flex flex-wrap items-center gap-2" style={{ position: 'relative', zIndex: 1 }}>
+                          <input
+                            type="text"
+                            value={editingContent}
+                            onChange={(e) => setEditingContent(e.target.value)}
+                            placeholder="Todo content..."
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                handleUpdate(todo.todoId, editingContent, editingDueDate, editingPriority, editingCategoryId);
+                              }
+                              if (e.key === "Escape") setEditingId(null);
+                            }}
+                            className="flex-1 min-w-[180px] px-3 py-2 border-2 rounded-lg focus:outline-none"
+                            style={{
+                              borderColor: '#B5A495',
+                              backgroundColor: '#FFFEF9',
+                              color: '#4A4239',
+                              fontFamily: '\'Courier New\', Courier, monospace',
+                            }}
+                          />
+                          <input
+                            type="datetime-local"
+                            value={editingDueDate}
+                            onChange={(e) => setEditingDueDate(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                handleUpdate(todo.todoId, editingContent, editingDueDate, editingPriority, editingCategoryId);
+                              }
+                              if (e.key === "Escape") setEditingId(null);
+                            }}
+                            className="px-3 py-2 border-2 rounded-lg focus:outline-none"
+                            style={{
+                              borderColor: '#B5A495',
+                              backgroundColor: '#FFFEF9',
+                              color: '#4A4239',
+                              fontFamily: '\'Courier New\', Courier, monospace',
+                            }}
+                          />
+                          <CategorySelector
+                            categories={categories || []}
+                            value={editingCategoryId}
+                            onChange={setEditingCategoryId}
+                            className="min-w-[160px]"
+                          />
+                          <button
+                            onClick={() => handleUpdate(todo.todoId, editingContent, editingDueDate, editingPriority, editingCategoryId)}
+                            className="px-4 py-2 rounded-lg transition-all text-sm font-medium shadow-md hover:shadow-lg"
+                            style={{
+                              backgroundColor: '#B5A495',
+                              color: '#FFFEF9',
+                              border: '2px solid #9B8A7C',
+                              fontFamily: '\'Georgia\', serif',
+                            }}
+                          >
+                            ✓ Save
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="px-4 py-2 rounded-lg transition-all text-sm font-medium shadow-md hover:shadow-lg"
+                            style={{
+                              backgroundColor: '#D9CFC0',
+                              color: '#6B5E52',
+                              border: '2px solid #B5A495',
+                              fontFamily: '\'Georgia\', serif',
+                            }}
+                          >
+                            ✗ Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex-1" style={{ position: 'relative' }}>
+                          <span
+                            onClick={() => handleEdit(todo)}
+                            className={`cursor-pointer transition-all block ${
+                              todo.isCompleted
+                                ? "line-through"
+                                : ""
+                            }`}
+                            style={{
+                              color: todo.isCompleted ? '#B5A99D' : '#4A4239',
+                              fontFamily: '\'Niconne\', cursive',
+                              fontSize: '1.4rem',
+                            }}
+                            title="Click to edit"
+                          >
+                            {todo.todoContent}
+                          </span>
+                          {/* SVG Pen Stroke Under Text */}
+                          <svg
+                            className="w-full"
+                            style={{ height: '12px', marginTop: '-4px' }}
+                            viewBox="0 0 200 12"
+                            preserveAspectRatio="none"
+                          >
+                            {todo.priority === 'Urgent' ? (
+                              <>
+                                <path d="M 2,3 Q 40,2 80,3 T 160,3 Q 180,3.5 198,3" stroke="#DC2626" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
+                                <path d="M 1,6 Q 50,5 100,6 T 190,6 Q 195,6.5 199,6" stroke="#DC2626" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
+                                <path d="M 2,9 Q 60,8 120,9 T 185,9 Q 192,9.5 198,9" stroke="#DC2626" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
+                              </>
+                            ) : todo.priority === 'High' ? (
+                              <>
+                                <path d="M 2,4 Q 50,3 100,4 T 190,4 Q 195,4.5 198,4" stroke="#EA580C" strokeWidth="1.8" fill="none" strokeLinecap="round" opacity="0.8" />
+                                <path d="M 1,8 Q 60,7 120,8 T 185,8" stroke="#EA580C" strokeWidth="1.8" fill="none" strokeLinecap="round" opacity="0.8" />
+                              </>
+                            ) : todo.priority === 'Medium' ? (
+                              <path d="M 2,6 Q 60,5 120,6 T 198,6" stroke="#EAB308" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.8" />
+                            ) : (
+                              <path d="M 2,6 Q 100,5 198,6" stroke="#D1D5DB" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.6" />
+                            )}
+                          </svg>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2" style={{ position: 'relative', zIndex: 1 }}>
+                        <PriorityBadge priority={todo.priority} />
+                      </div>
+
+                      {todo.dueDate && (
+                        <span className="text-sm flex items-center gap-1" style={{
+                          color: '#B5A495',
+                          fontFamily: '\'Courier New\', Courier, monospace',
+                          position: 'relative',
+                          zIndex: 1,
+                        }}>
+                          {new Date(todo.dueDate).toLocaleDateString("tr-TR")}
+                        </span>
+                      )}
+
+                      <button
+                        onClick={() => deleteMutation.mutate(todo.todoId)}
+                        disabled={deleteMutation.isPending}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-lg disabled:opacity-50"
+                        style={{
+                          color: '#A8826B',
+                          position: 'relative',
+                          zIndex: 1,
+                        }}
+                        title="Delete"
+                      >
+                        {deleteMutation.isPending && deleteMutation.variables === todo.todoId ? (
+                          <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Categorized Todos */}
+              {categories?.filter((cat) => todos?.some((t) => t.categoryId === cat.categoryId)).map((category) => (
+                <div key={category.categoryId} className="space-y-2 mb-6">
+                  {/* Category Header - Simple Bold Title */}
+                  {editingCategoryHeaderId === category.categoryId ? (
+                    <div className="flex items-center gap-2 mb-3">
+                      <input
+                        type="text"
+                        value={editingCategoryName}
+                        onChange={(e) => setEditingCategoryName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            updateCategoryMutation.mutate({
+                              id: category.categoryId,
+                              name: editingCategoryName,
+                            });
+                          }
+                          if (e.key === "Escape") setEditingCategoryHeaderId(null);
+                        }}
+                        className="flex-1 px-3 py-2 border-2 rounded-lg focus:outline-none text-lg font-bold"
+                        style={{
+                          borderColor: '#6B5E52',
+                          color: '#6B5E52',
+                          fontFamily: '\'Playfair Display\', serif',
+                          backgroundColor: '#FFFEF9',
+                        }}
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => updateCategoryMutation.mutate({
+                          id: category.categoryId,
+                          name: editingCategoryName,
+                        })}
+                        className="px-3 py-2 rounded-lg text-sm font-medium shadow-md hover:shadow-lg transition-all"
+                        style={{
+                          backgroundColor: '#B5A495',
+                          color: '#FFFEF9',
+                          border: '2px solid #9B8A7C',
+                          fontFamily: '\'Georgia\', serif',
+                        }}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={() => setEditingCategoryHeaderId(null)}
+                        className="px-3 py-2 rounded-lg text-sm font-medium shadow-md hover:shadow-lg transition-all"
+                        style={{
+                          backgroundColor: '#D9CFC0',
+                          color: '#6B5E52',
+                          border: '2px solid #B5A495',
+                          fontFamily: '\'Georgia\', serif',
+                        }}
+                      >
+                        ✗
+                      </button>
+                    </div>
+                  ) : (
+                    <h3 
+                      className="font-bold text-xl flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity mb-3 pb-2 border-b-2"
+                      style={{
+                        color: '#6B5E52',
+                        borderColor: '#6B5E52',
+                        fontFamily: '\'Playfair Display\', serif',
+                      }}
+                      onClick={() => {
+                        setEditingCategoryHeaderId(category.categoryId);
+                        setEditingCategoryName(category.name);
+                      }}
+                      title="Click to edit category name"
+                    >
+                      {category.icon && <span className="text-2xl">{category.icon}</span>}
+                      {category.name}
+                    </h3>
+                  )}
+
+                  {/* Category Todos - Simple List */}
+                  <div className="space-y-1 pl-4">
+                    {todos?.filter((todo) => todo.categoryId === category.categoryId).map((todo) => (
                 <div
                   key={todo.todoId}
-                  className={`group flex items-center gap-3 p-4 rounded-xl border transition-all ${
+                  className={`group relative flex items-center gap-2 py-2 px-3 rounded-lg transition-all ${
                     todo.isCompleted 
-                      ? 'bg-gray-50 border-gray-200' 
-                      : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md'
+                      ? 'opacity-60' 
+                      : ''
+                  } ${
+                    draggingId === todo.todoId ? 'opacity-50' : ''
+                  } ${
+                    dragOverId === todo.todoId && draggingId !== todo.todoId
+                      ? 'bg-opacity-20'
+                      : ''
                   }`}
+                  style={{
+                    backgroundColor: '#FFFEF9',
+                    cursor: 'grab',
+                  }}
+                  draggable
+                  onDragStart={(e) => {
+                    console.log("onDragStart", todo.todoId);
+                    setDraggingId(todo.todoId);
+                  }}
+                  onDragEnd={() => {
+                    console.log("onDragEnd");
+                    setDraggingId(null);
+                    setDragOverId(null);
+                  }}
+                  onDragOver={(e) => {
+                    if (!draggingId || draggingId === todo.todoId) return;
+                    e.preventDefault();
+                    console.log("onDragOver", { draggingId, targetId: todo.todoId });
+                    setDragOverId(todo.todoId);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    console.log("onDrop", { draggingId, targetId: todo.todoId });
+                    if (!draggingId || draggingId === todo.todoId) return;
+                    handleCombineIntoCategory(draggingId, todo.todoId);
+                    setDragOverId(null);
+                    setDraggingId(null);
+                  }}
+                  title="Drag onto another todo to auto-create a category"
                 >
+                  <span className="text-2xl" style={{ color: '#6B5E52', marginRight: '8px', minWidth: '20px', position: 'relative', zIndex: 1 }}>–</span>
                   <input
                     type="checkbox"
                     checked={todo.isCompleted}
                     onChange={() => toggleMutation.mutate(todo.todoId)}
-                    className="w-5 h-5 rounded-md border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer transition-all hover:border-blue-500"
+                    className="w-5 h-5 rounded-sm cursor-pointer transition-all"
+                    style={{
+                      accentColor: '#B5A495',
+                      border: '2px solid #B5A495',
+                      position: 'relative',
+                      zIndex: 1,
+                    }}
                     title={todo.isCompleted ? "Mark as incomplete" : "Mark as complete"}
                   />
 
                   {editingId === todo.todoId ? (
-                    <div className="flex-1 flex gap-2">
+                    <div className="flex-1 flex flex-wrap items-center gap-2" style={{ position: 'relative', zIndex: 1 }}>
                       <input
                         type="text"
                         value={editingContent}
@@ -245,11 +841,15 @@ function TodosContent() {
                         placeholder="Todo content..."
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
-                            handleUpdate(todo.todoId, editingContent, editingDueDate);
+                            handleUpdate(todo.todoId, editingContent, editingDueDate, editingPriority, editingCategoryId);
                           }
                           if (e.key === "Escape") setEditingId(null);
                         }}
-                        className="flex-1 px-3 py-2 border-2 border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400"
+                        className="flex-1 min-w-[180px] px-3 py-2 border-2 border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400"
+                        style={{
+                          fontFamily: '\'Niconne\', cursive',
+                          fontSize: '1.3rem',
+                        }}
                       />
                       <input
                         type="datetime-local"
@@ -257,14 +857,20 @@ function TodosContent() {
                         onChange={(e) => setEditingDueDate(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
-                            handleUpdate(todo.todoId, editingContent, editingDueDate);
+                            handleUpdate(todo.todoId, editingContent, editingDueDate, editingPriority, editingCategoryId);
                           }
                           if (e.key === "Escape") setEditingId(null);
                         }}
                         className="px-3 py-2 border-2 border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                       />
+                      <CategorySelector
+                        categories={categories || []}
+                        value={editingCategoryId}
+                        onChange={setEditingCategoryId}
+                        className="min-w-[160px]"
+                      />
                       <button
-                        onClick={() => handleUpdate(todo.todoId, editingContent, editingDueDate)}
+                        onClick={() => handleUpdate(todo.todoId, editingContent, editingDueDate, editingPriority, editingCategoryId)}
                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
                       >
                         Save
@@ -277,21 +883,55 @@ function TodosContent() {
                       </button>
                     </div>
                   ) : (
-                    <span
-                      onClick={() => handleEdit(todo)}
-                      className={`flex-1 cursor-pointer transition-all ${
-                        todo.isCompleted
-                          ? "line-through text-gray-400"
-                          : "text-gray-700 hover:text-blue-600"
-                      }`}
-                      title="Click to edit"
-                    >
-                      {todo.todoContent}
-                    </span>
+                    <div className="flex-1" style={{ position: 'relative' }}>
+                      <span
+                        onClick={() => handleEdit(todo)}
+                        className={`cursor-pointer transition-all block ${
+                          todo.isCompleted
+                            ? "line-through text-gray-400"
+                            : "text-gray-700 hover:text-blue-600"
+                        }`}
+                        style={{
+                          fontFamily: '\'Niconne\', cursive',
+                          fontSize: '1.4rem',
+                        }}
+                        title="Click to edit"
+                      >
+                        {todo.todoContent}
+                      </span>
+                      {/* SVG Pen Stroke Under Text */}
+                      <svg
+                        className="w-full"
+                        style={{ height: '10px', marginTop: '-3px' }}
+                        viewBox="0 0 200 10"
+                        preserveAspectRatio="none"
+                      >
+                        {todo.priority === 'Urgent' ? (
+                          <>
+                            <path d="M 2,2 Q 40,1.5 80,2 T 160,2 Q 180,2.3 198,2" stroke="#DC2626" strokeWidth="1.6" fill="none" strokeLinecap="round" opacity="0.8" />
+                            <path d="M 1,5 Q 50,4.5 100,5 T 190,5 Q 195,5.3 199,5" stroke="#DC2626" strokeWidth="1.6" fill="none" strokeLinecap="round" opacity="0.8" />
+                            <path d="M 2,8 Q 60,7.5 120,8 T 185,8 Q 192,8.3 198,8" stroke="#DC2626" strokeWidth="1.6" fill="none" strokeLinecap="round" opacity="0.8" />
+                          </>
+                        ) : todo.priority === 'High' ? (
+                          <>
+                            <path d="M 2,3 Q 50,2.5 100,3 T 190,3 Q 195,3.3 198,3" stroke="#EA580C" strokeWidth="1.4" fill="none" strokeLinecap="round" opacity="0.8" />
+                            <path d="M 1,7 Q 60,6.5 120,7 T 185,7" stroke="#EA580C" strokeWidth="1.4" fill="none" strokeLinecap="round" opacity="0.8" />
+                          </>
+                        ) : todo.priority === 'Medium' ? (
+                          <path d="M 2,5 Q 60,4.5 120,5 T 198,5" stroke="#EAB308" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.8" />
+                        ) : (
+                          <path d="M 2,5 Q 100,4.5 198,5" stroke="#D1D5DB" strokeWidth="1" fill="none" strokeLinecap="round" opacity="0.6" />
+                        )}
+                      </svg>
+                    </div>
                   )}
 
+                  <div className="flex items-center gap-2" style={{ position: 'relative', zIndex: 1 }}>
+                    <PriorityBadge priority={todo.priority} />
+                  </div>
+
                   {todo.dueDate && (
-                    <span className="text-sm text-gray-500 flex items-center gap-1">
+                    <span className="text-sm text-gray-500 flex items-center gap-1" style={{ position: 'relative', zIndex: 1 }}>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -303,6 +943,7 @@ function TodosContent() {
                     onClick={() => deleteMutation.mutate(todo.todoId)}
                     disabled={deleteMutation.isPending}
                     className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-50"
+                    style={{ position: 'relative', zIndex: 1 }}
                     title="Delete"
                   >
                     {deleteMutation.isPending && deleteMutation.variables === todo.todoId ? (
@@ -317,11 +958,15 @@ function TodosContent() {
                     )}
                   </button>
                 </div>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
         </div>
       </div>
+      <CategoryManager isOpen={categoryModalOpen} onClose={() => setCategoryModalOpen(false)} />
     </div>
   );
 }

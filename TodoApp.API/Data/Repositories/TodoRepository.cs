@@ -35,14 +35,21 @@ namespace TodoApp.API.Data.Repositories
 
         public async Task<List<Todo>> GetAllTodosAsync()
         {
-            List<Todo> todos = await dbSet.Where(t => !t.IsDeleted).AsNoTracking().ToListAsync();
+            List<Todo> todos = await dbSet
+                .Where(t => !t.IsDeleted)
+                .Include(t => t.Category)
+                .AsNoTracking()
+                .ToListAsync();
             return todos;
         }
 
         public async Task<Todo> GetTodoByIdAsync(int todoId)
         {
             // AsNoTracking kullan, her seferinde fresh entity dönsün
-            var todo = await dbSet.AsNoTracking().FirstOrDefaultAsync(t => t.TodoId == todoId);
+            var todo = await dbSet
+                .Include(t => t.Category)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.TodoId == todoId);
             if (todo == null || todo.IsDeleted)
                 throw new Exception($"Todo with id {todoId} not found");
             return todo;

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using TodoApp.API.Models.Enums;
 
 namespace TodoApp.API.Models.Entities
 {
@@ -19,6 +20,12 @@ namespace TodoApp.API.Models.Entities
 
         public DateTime? DueDate { get; set; }
 
+        public Priority Priority { get; set; } = Priority.Medium;
+
+        [ForeignKey("Category")]
+        public int? CategoryId { get; set; }
+
+        public Category? Category { get; set; }
         public AppUser? AppUser { get; set; }
     }
 }

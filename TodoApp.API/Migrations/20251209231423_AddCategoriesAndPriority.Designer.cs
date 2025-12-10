@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TodoApp.API.Data;
@@ -11,9 +12,11 @@ using TodoApp.API.Data;
 namespace TodoApp.API.Migrations
 {
     [DbContext(typeof(TodoApp.API.Data.DbContext))]
-    partial class DbContextModelSnapshot : ModelSnapshot
+    [Migration("20251209231423_AddCategoriesAndPriority")]
+    partial class AddCategoriesAndPriority
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
