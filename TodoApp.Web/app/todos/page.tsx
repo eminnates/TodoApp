@@ -41,8 +41,8 @@ function TodosContent() {
   const categoryInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Trigger page load animation after component mounts
-    const timer = setTimeout(() => setIsPageLoaded(true), 100);
+    // Trigger page load animation after component mounts - faster
+    const timer = setTimeout(() => setIsPageLoaded(true), 50);
     return () => clearTimeout(timer);
   }, []);
 
@@ -205,13 +205,15 @@ function TodosContent() {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: isPageLoaded ? 1 : 0, scale: isPageLoaded ? 1 : 0.8 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: isPageLoaded ? 1 : 0, scale: isPageLoaded ? 1 : 0.95 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
       className="min-h-screen" 
       style={{
         background: 'linear-gradient(to bottom, #FAF8F3 0%, #F5F0E8 50%, #F0EBE0 100%)',
         fontFamily: '\'Courier New\', Courier, monospace',
+        willChange: 'transform, opacity',
+        backfaceVisibility: 'hidden',
       }}
     >
       <svg style={{ position: 'absolute', width: 0, height: 0 }}>
@@ -225,9 +227,9 @@ function TodosContent() {
 
       {/* Header */}
       <motion.div 
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: isPageLoaded ? 0 : -50, opacity: isPageLoaded ? 1 : 0 }}
-        transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+        initial={{ y: -30, opacity: 0 }}
+        animate={{ y: isPageLoaded ? 0 : -30, opacity: isPageLoaded ? 1 : 0 }}
+        transition={{ duration: 0.3, delay: 0.1, ease: "easeOut" }}
         className="shadow-md border-b-4" 
         style={{
         backgroundColor: '#B5A495',
@@ -259,16 +261,17 @@ function TodosContent() {
       </motion.div>
 
       <motion.div 
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: isPageLoaded ? 1 : 0, y: isPageLoaded ? 0 : 30 }}
-        transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: isPageLoaded ? 1 : 0, y: isPageLoaded ? 0 : 20 }}
+        transition={{ duration: 0.4, delay: 0.15, ease: "easeOut" }}
         className="max-w-5xl mx-auto px-4 py-8"
+        style={{ willChange: 'transform, opacity' }}
       >
         {/* Create Todo Form */}
         <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: isPageLoaded ? 1 : 0, scale: isPageLoaded ? 1 : 0.95 }}
-          transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isPageLoaded ? 1 : 0 }}
+          transition={{ duration: 0.3, delay: 0.2, ease: "easeOut" }}
           className="p-6 rounded-xl shadow-2xl mb-6 border-4" 
           style={{
           backgroundColor: '#FFFEF9', borderColor: '#D9CFC0',
@@ -316,9 +319,9 @@ function TodosContent() {
 
         {/* List Section */}
         <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: isPageLoaded ? 1 : 0, scale: isPageLoaded ? 1 : 0.95 }}
-          transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isPageLoaded ? 1 : 0 }}
+          transition={{ duration: 0.3, delay: 0.25, ease: "easeOut" }}
           className="rounded-2xl shadow-2xl p-6 border-4" 
           style={{
           backgroundColor: '#FFFEF9', borderColor: '#B5A495',

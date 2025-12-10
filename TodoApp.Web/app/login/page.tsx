@@ -63,10 +63,10 @@ export default function LoginPage() {
       
       setIsOpening(true);
       
-      // Yönlendirme süresi
+      // Yönlendirme süresi - daha kısa ve optimize
       setTimeout(() => {
         router.push("/todos");
-      }, 2500); 
+      }, 1800); 
     } catch (err: any) {
       setError(err.response?.data?.message || "Login failed");
     }
@@ -103,18 +103,18 @@ export default function LoginPage() {
       <motion.div
         initial={{ scale: 1, x: 0 }}
         animate={isOpening ? {
-          scale: 4, // <--- GÜNCELLENDİ: 55'ten 12'ye düşürüldü (Daha makul bir zoom)
-          x: '25%',  // Sayfayı ortalamak için hafif ayar
+          scale: 3.5,
+          x: '20%',
         } : (isSubmitting ? {
           scale: [1, 1.02, 1],
         } : {})}
         transition={isOpening ? {
-          duration: 1.5,
-          ease: [0.645, 0.045, 0.355, 1.000], 
-          delay: 0.8, // Kapak açıldıktan sonra zoom başlasın
+          duration: 1,
+          ease: "easeOut",
+          delay: 0.6,
         } : {
           repeat: Infinity,
-          duration: 1,
+          duration: 2,
           ease: "easeInOut"
         }}
         style={{
@@ -123,6 +123,8 @@ export default function LoginPage() {
           aspectRatio: '3/4',
           position: 'relative',
           transformStyle: 'preserve-3d',
+          willChange: 'transform',
+          backfaceVisibility: 'hidden',
         }}
       >
         {/* === PAGE STACK === */}
@@ -162,8 +164,8 @@ export default function LoginPage() {
         <motion.div
           animate={isOpening ? { rotateY: -180 } : { rotateY: 0 }}
           transition={{
-            duration: 1.6,
-            ease: "easeInOut",
+            duration: 1.2,
+            ease: "easeOut",
           }}
           style={{
             position: 'absolute',
@@ -171,6 +173,8 @@ export default function LoginPage() {
             transformOrigin: 'left center',
             transformStyle: 'preserve-3d',
             zIndex: 10,
+            willChange: 'transform',
+            backfaceVisibility: 'hidden',
           }}
         >
           {/* -- COVER FRONT -- */}
@@ -184,6 +188,7 @@ export default function LoginPage() {
             boxShadow: '5px 5px 20px rgba(0,0,0,0.4)',
             padding: '40px',
             backgroundImage: `repeating-radial-gradient(circle at 20% 30%, rgba(0,0,0,0.03) 0px, transparent 2px, transparent 3px, rgba(0,0,0,0.03) 4px)`,
+            transform: 'translateZ(0)',
           }}>
             
             {/* Corner decorations */}
