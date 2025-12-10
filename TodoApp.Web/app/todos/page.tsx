@@ -12,6 +12,7 @@ import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthStore } from "@/store/auth-store";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function TodosPage() {
   return (
@@ -34,9 +35,16 @@ function TodosContent() {
   const [dragOverId, setDragOverId] = useState<number | null>(null);
   const [editingCategoryHeaderId, setEditingCategoryHeaderId] = useState<number | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState<string>("");
+  const [isPageLoaded, setIsPageLoaded] = useState(false);
   
   const editInputRef = useRef<HTMLInputElement>(null);
   const categoryInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Trigger page load animation after component mounts
+    const timer = setTimeout(() => setIsPageLoaded(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const categoryPalette = [
     "#6366F1", "#22C55E", "#F97316", "#0EA5E9", "#EC4899", "#F59E0B"
@@ -196,10 +204,16 @@ function TodosContent() {
   };
 
   return (
-    <div className="min-h-screen" style={{
-      background: 'linear-gradient(to bottom, #FAF8F3 0%, #F5F0E8 50%, #F0EBE0 100%)',
-      fontFamily: '\'Courier New\', Courier, monospace',
-    }}>
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: isPageLoaded ? 1 : 0, scale: isPageLoaded ? 1 : 0.8 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="min-h-screen" 
+      style={{
+        background: 'linear-gradient(to bottom, #FAF8F3 0%, #F5F0E8 50%, #F0EBE0 100%)',
+        fontFamily: '\'Courier New\', Courier, monospace',
+      }}
+    >
       <svg style={{ position: 'absolute', width: 0, height: 0 }}>
         <defs>
           <filter id="hand-drawn-filter" x="-20%" y="-20%" width="140%" height="140%">
@@ -210,7 +224,12 @@ function TodosContent() {
       </svg>
 
       {/* Header */}
-      <div className="shadow-md border-b-4" style={{
+      <motion.div 
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: isPageLoaded ? 0 : -50, opacity: isPageLoaded ? 1 : 0 }}
+        transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+        className="shadow-md border-b-4" 
+        style={{
         backgroundColor: '#B5A495',
         borderColor: '#9B8A7C',
         backgroundImage: 'linear-gradient(90deg, rgba(155, 138, 124, 0.1) 0px, transparent 1px), linear-gradient(rgba(155, 138, 124, 0.1) 0px, transparent 1px)',
@@ -237,11 +256,21 @@ function TodosContent() {
             Close Book
           </button>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: isPageLoaded ? 1 : 0, y: isPageLoaded ? 0 : 30 }}
+        transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
+        className="max-w-5xl mx-auto px-4 py-8"
+      >
         {/* Create Todo Form */}
-        <div className="p-6 rounded-xl shadow-2xl mb-6 border-4" style={{
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: isPageLoaded ? 1 : 0, scale: isPageLoaded ? 1 : 0.95 }}
+          transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
+          className="p-6 rounded-xl shadow-2xl mb-6 border-4" 
+          style={{
           backgroundColor: '#FFFEF9', borderColor: '#D9CFC0',
           backgroundImage: `repeating-linear-gradient(transparent, transparent 31px, rgba(217, 207, 192, 0.15) 31px, rgba(217, 207, 192, 0.15) 32px), linear-gradient(90deg, rgba(217, 207, 192, 0.25) 1px, transparent 1px)`,
           backgroundSize: '100% 32px, 40px 100%', backgroundPosition: '0 8px, 20px 0',
@@ -283,10 +312,15 @@ function TodosContent() {
               </button>
             </div>
           </form>
-        </div>
+        </motion.div>
 
         {/* List Section */}
-        <div className="rounded-2xl shadow-2xl p-6 border-4" style={{
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: isPageLoaded ? 1 : 0, scale: isPageLoaded ? 1 : 0.95 }}
+          transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
+          className="rounded-2xl shadow-2xl p-6 border-4" 
+          style={{
           backgroundColor: '#FFFEF9', borderColor: '#B5A495',
           backgroundImage: `repeating-linear-gradient(transparent, transparent 31px, rgba(217, 207, 192, 0.15) 31px, rgba(217, 207, 192, 0.15) 32px)`,
           backgroundSize: '100% 32px', backgroundPosition: '0 8px',
@@ -431,9 +465,9 @@ function TodosContent() {
               ))}
             </div>
           )}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
       <CategoryManager isOpen={categoryModalOpen} onClose={() => setCategoryModalOpen(false)} />
-    </div>
+    </motion.div>
   );
 }
