@@ -2,15 +2,16 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { registerSchema, RegisterInput } from "@/lib/validations/auth";
+import { registerSchema, RegisterInput } from "@/lib/validations/auth"; // Schema'nın register için olanını import et
 import { authApi } from "@/lib/api/auth";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false); // Damga animasyonu için state
 
   const {
     register,
@@ -24,9 +25,11 @@ export default function RegisterPage() {
     try {
       setError("");
       await authApi.register(data);
-      setSuccess(true);
       
-      // 2 saniye sonra login sayfasına yönlendir
+      // 1. Kayıt başarılı olunca Damga Animasyonunu başlat
+      setIsSuccess(true);
+      
+      // 2. Biraz bekleyip Login sayfasına yönlendir
       setTimeout(() => {
         router.push("/login");
       }, 2000);
@@ -36,116 +39,218 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4 py-12">
-      <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-100">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Sign Up
+    <div className="min-h-screen flex items-center justify-center overflow-hidden" style={{
+      background: 'linear-gradient(135deg, #8B7355 0%, #6B5E52 50%, #5A4E42 100%)', // Login ile aynı zemin
+      perspective: '1000px',
+    }}>
+      
+      {/* THE LIBRARY CARD */}
+      <motion.div
+        initial={{ y: -800, rotate: -5 }} // Kart yukarıdan ve hafif eğik gelir
+        animate={{ y: 0, rotate: 0 }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 60, 
+          damping: 15, 
+          delay: 0.2 
+        }}
+        style={{
+          width: '90%',
+          maxWidth: '450px',
+          backgroundColor: '#F5F0E6', // Açık manila/saman kağıdı rengi
+          backgroundImage: `
+            linear-gradient(#E5E0D6 1px, transparent 1px),
+            linear-gradient(90deg, #E5E0D6 1px, transparent 1px)
+          `, // Hafif kareli/çizgili doku
+          backgroundSize: '20px 20px',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+          padding: '40px',
+          position: 'relative',
+          borderRadius: '2px',
+          border: '1px solid #D9CFC0',
+        }}
+      >
+        {/* Delik (Kartoteks deliği) */}
+        <div style={{
+          position: 'absolute',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '24px',
+          height: '24px',
+          backgroundColor: '#5A4E42', // Arka plan rengi (delik hissi için)
+          borderRadius: '50%',
+          boxShadow: 'inset 2px 2px 4px rgba(0,0,0,0.5)',
+          zIndex: 2
+        }} />
+
+        {/* Header Section */}
+        <div className="text-center mb-8 border-b-2 border-[#8B7355] pb-4 border-dashed">
+          <h1 style={{ 
+            fontFamily: "'Courier New', monospace", 
+            fontWeight: 'bold', 
+            fontSize: '1.5rem', 
+            color: '#5A4E42',
+            letterSpacing: '-1px',
+            textTransform: 'uppercase'
+          }}>
+            Membership Record
           </h1>
+          <p style={{ 
+            fontFamily: "'Niconne', cursive", 
+            fontSize: '1.8rem', 
+            color: '#8B7355',
+            marginTop: '-5px'
+          }}>
+            Leaf Note Archives
+          </p>
+          <div style={{ 
+            marginTop: '10px', 
+            fontSize: '0.8rem', 
+            fontFamily: "'Courier New', monospace",
+            display: 'flex', 
+            justifyContent: 'space-between',
+            color: '#8B7355'
+          }}>
+            <span>No: {Math.floor(Math.random() * 10000)}</span>
+            <span>Date: {new Date().toLocaleDateString()}</span>
+          </div>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6">
-            {error}
+          <div style={{ 
+            backgroundColor: 'rgba(185, 28, 28, 0.1)', 
+            border: '1px dashed #B91C1C', 
+            color: '#B91C1C', 
+            padding: '8px', 
+            marginBottom: '16px', 
+            fontFamily: "'Courier New', monospace", 
+            fontSize: '0.85rem',
+            textAlign: 'center'
+          }}>
+            Error: {error}
           </div>
         )}
 
-        {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl mb-6">
-            ✓ Registration successful! Redirecting to login page...
-          </div>
-        )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 relative">
+          
+          {/* Form Alanları - Satır Çizgisi Stilinde */}
+          {[
+            { label: "Full Name", name: "fullName", type: "text" },
+            { label: "Username", name: "userName", type: "text" },
+            { label: "Password", name: "password", type: "password" },
+            { label: "Confirm Password", name: "confirmPassword", type: "password" }
+          ].map((field) => (
+            <div key={field.name} style={{ position: 'relative', marginBottom: '15px' }}>
+              <label style={{ 
+                display: 'block', 
+                fontSize: '0.75rem', 
+                color: '#8B7355', 
+                fontFamily: "'Courier New', monospace",
+                fontWeight: 'bold',
+                textTransform: 'uppercase'
+              }}>
+                {field.label}:
+              </label>
+              <input
+                {...register(field.name as any)}
+                type={field.type}
+                style={{
+                  width: '100%',
+                  padding: '4px 0',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  borderBottom: '2px solid #B5A495', // Alt çizgi
+                  color: '#2D241E',
+                  fontFamily: "'Courier New', monospace",
+                  fontSize: '1.1rem',
+                  outline: 'none',
+                  borderRadius: 0,
+                }}
+              />
+              {errors[field.name as keyof RegisterInput] && (
+                <p style={{ color: '#B91C1C', fontSize: '0.75rem', marginTop: '2px', fontFamily: "'Courier New'" }}>
+                  {errors[field.name as keyof RegisterInput]?.message}
+                </p>
+              )}
+            </div>
+          ))}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Username
-            </label>
-            <input
-              {...register("userName")}
-              type="text"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 transition-all text-gray-900 placeholder-gray-400"
-              placeholder="username"
-            />
-            {errors.userName && (
-              <p className="text-red-500 text-sm mt-2">{errors.userName.message}</p>
+          <div style={{ paddingTop: '20px' }}>
+            <button
+              type="submit"
+              disabled={isSubmitting || isSuccess}
+              style={{
+                width: '100%',
+                padding: '12px',
+                backgroundColor: '#2D241E',
+                color: '#F5F0E6',
+                fontFamily: "'Courier New', monospace",
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                border: '2px solid #2D241E',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                opacity: isSubmitting ? 0.7 : 1,
+                transition: 'all 0.2s',
+                textTransform: 'uppercase',
+                letterSpacing: '1px'
+              }}
+            >
+              {isSubmitting ? "Processing..." : "Submit Application"}
+            </button>
+          </div>
+
+          {/* THE STAMP ANIMATION (DAMGA) */}
+          <AnimatePresence>
+            {isSuccess && (
+              <motion.div
+                initial={{ scale: 3, opacity: 0, rotate: -20 }}
+                animate={{ scale: 1, opacity: 1, rotate: -5 }} // Hafif yamuk vurulur
+                transition={{ 
+                  type: "spring", 
+                  stiffness: 300, 
+                  damping: 15,
+                  duration: 0.3
+                }}
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  border: '4px solid #C41E3A', // Damga Kırmızısı
+                  color: '#C41E3A',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  fontFamily: "'Courier New', monospace",
+                  fontSize: '2rem',
+                  fontWeight: '900',
+                  textTransform: 'uppercase',
+                  zIndex: 50,
+                  backgroundColor: 'rgba(196, 30, 58, 0.1)', // Hafif mürekkep ıslaklığı
+                  backdropFilter: 'blur(1px)',
+                  boxShadow: '0 0 0 4px rgba(196, 30, 58, 0.2)', // Mürekkep yayılması
+                  pointerEvents: 'none', // Tıklamayı engellemesin
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                APPROVED
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Full Name
-            </label>
-            <input
-              {...register("fullName")}
-              type="text"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 transition-all text-gray-900 placeholder-gray-400"
-              placeholder="John Doe"
-            />
-            {errors.fullName && (
-              <p className="text-red-500 text-sm mt-2">{errors.fullName.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Password
-            </label>
-            <input
-              {...register("password")}
-              type="password"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 transition-all text-gray-900 placeholder-gray-400"
-              placeholder="••••••"
-            />
-            {errors.password && (
-              <p className="text-red-500 text-sm mt-2">{errors.password.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Confirm Password
-            </label>
-            <input
-              {...register("confirmPassword")}
-              type="password"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 transition-all text-gray-900 placeholder-gray-400"
-              placeholder="••••••"
-            />
-            {errors.confirmPassword && (
-              <p className="text-red-500 text-sm mt-2">{errors.confirmPassword.message}</p>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Signing up...
-              </span>
-            ) : "Sign Up"}
-          </button>
         </form>
 
-        <p className="mt-6 text-center text-gray-600">
-          Already have an account?{" "}
-          <a href="/login" className="text-purple-600 hover:text-purple-700 font-semibold hover:underline">
-            Sign In
-          </a>
+        <p style={{ 
+          marginTop: '30px', 
+          textAlign: 'center', 
+          fontFamily: "'Courier New', monospace", 
+          fontSize: '0.8rem',
+          color: '#8B7355'
+        }}>
+          Already a member? <a href="/login" style={{ textDecoration: 'underline', fontWeight: 'bold' }}>Login here</a>
         </p>
-      </div>
+
+      </motion.div>
     </div>
   );
 }
