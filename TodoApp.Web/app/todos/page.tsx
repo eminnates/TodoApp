@@ -35,8 +35,8 @@ function TodosContent() {
   const [editingCategoryHeaderId, setEditingCategoryHeaderId] = useState<number | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState<string>("");
   
-  // Input genişliğini içeriğe göre ayarlamak için ref
   const editInputRef = useRef<HTMLInputElement>(null);
+  const categoryInputRef = useRef<HTMLInputElement>(null);
 
   const categoryPalette = [
     "#6366F1", "#22C55E", "#F97316", "#0EA5E9", "#EC4899", "#F59E0B"
@@ -137,8 +137,13 @@ function TodosContent() {
     setEditingDueDate(todo.dueDate ? new Date(todo.dueDate).toISOString().slice(0, 16) : "");
     setEditingPriority(todo.priority ?? Priority.Medium);
     setEditingCategoryId(todo.categoryId ?? undefined);
-    // Edit moduna geçince inputa odaklan
     setTimeout(() => editInputRef.current?.focus(), 100);
+  };
+
+  const handleEditCategory = (id: number, name: string) => {
+    setEditingCategoryHeaderId(id);
+    setEditingCategoryName(name);
+    setTimeout(() => categoryInputRef.current?.focus(), 100);
   };
 
   const handleUpdate = (id: number, content: string, dueDate: string, priority: Priority, categoryId?: number) => {
@@ -167,33 +172,34 @@ function TodosContent() {
     groupMutation.mutate({ sourceId, targetId });
   };
 
-  // Reusable component for the wavy underline SVG
-  const WavyUnderline = ({ priority }: { priority: Priority }) => (
-    <svg style={{ width: '100%', height: '12px', marginTop: '-6px', overflow: 'visible', display: 'block' }} viewBox="0 0 100 12" preserveAspectRatio="none">
-      {priority === Priority.Urgent ? (
-        <>
-          <path d="M 0,4 Q 25,2 50,4 T 100,4" stroke="#DC2626" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.7" filter="url(#hand-drawn-filter)" vectorEffect="non-scaling-stroke" />
-          <path d="M 0,8 Q 25,10 50,8 T 100,8" stroke="#DC2626" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.6" filter="url(#hand-drawn-filter)" vectorEffect="non-scaling-stroke" />
-        </>
-      ) : priority === Priority.High ? (
-        <>
-          <path d="M 0,5 Q 25,3 50,5 T 100,5" stroke="#EA580C" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.7" filter="url(#hand-drawn-filter)" vectorEffect="non-scaling-stroke" />
-          <path d="M 5,9 Q 30,11 55,9 T 95,9" stroke="#EA580C" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.6" filter="url(#hand-drawn-filter)" vectorEffect="non-scaling-stroke" />
-        </>
-      ) : priority === Priority.Medium ? (
-        <path d="M 0,6 Q 25,4 50,6 T 100,6" stroke="#EAB308" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.7" filter="url(#hand-drawn-filter)" vectorEffect="non-scaling-stroke" />
-      ) : (
-        <path d="M 0,6 Q 25,5 50,6 T 100,6" stroke="#D1D5DB" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.6" filter="url(#hand-drawn-filter)" vectorEffect="non-scaling-stroke" />
-      )}
-    </svg>
-  );
+  const getUnderlineColor = (dueDate: string | undefined) => {
+    if (!dueDate) return null;
+    const due = new Date(dueDate).getTime();
+    const now = Date.now();
+    const diffDays = (due - now) / (1000 * 60 * 60 * 24);
+    
+    if (diffDays <= 1) return "#DC2626"; // Kırmızı - 1 gün veya daha az
+    if (diffDays <= 3) return "#EAB308"; // Sarı - 3 gün veya daha az
+    if (diffDays <= 7) return "#EAB308"; // Sarı - 7 gün veya daha az
+    return null;
+  };
+
+  const WavyUnderline = ({ dueDate }: { dueDate: string | undefined }) => {
+    const color = getUnderlineColor(dueDate);
+    if (!color) return null;
+    
+    return (
+      <svg style={{ width: '100%', height: '12px', marginTop: '-6px', overflow: 'visible', display: 'block' }} viewBox="0 0 100 12" preserveAspectRatio="none">
+        <path d="M 0,6 Q 25,4 50,6 T 100,6" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.7" filter="url(#hand-drawn-filter)" vectorEffect="non-scaling-stroke" />
+      </svg>
+    );
+  };
 
   return (
     <div className="min-h-screen" style={{
       background: 'linear-gradient(to bottom, #FAF8F3 0%, #F5F0E8 50%, #F0EBE0 100%)',
       fontFamily: '\'Courier New\', Courier, monospace',
     }}>
-      {/* GÖRÜNMEZ FİLTRE (Titrek Çizgi İçin) */}
       <svg style={{ position: 'absolute', width: 0, height: 0 }}>
         <defs>
           <filter id="hand-drawn-filter" x="-20%" y="-20%" width="140%" height="140%">
@@ -221,9 +227,9 @@ function TodosContent() {
             </div>
             <div>
               <h1 className="text-2xl font-bold" style={{
-                color: '#FFFEF9', textShadow: '1px 1px 3px rgba(0,0,0,0.3)', fontFamily: '\'Playfair Display\', serif', letterSpacing: '1px',
+                color: '#FFFEF9', textShadow: '1px 1px 3px rgba(0,0,0,0.3)', fontFamily: '\'Niconne\', cursive', letterSpacing: '2px', fontSize: '2.5rem'
               }}>Leaf Note</h1>
-              <p className="text-sm" style={{ color: '#E5DDD0' }}>{user?.fullName || user?.userName}</p>
+              <p className="text-sm" style={{ color: '#E5DDD0', fontFamily: '\'Courier New\'' }}>{user?.fullName || user?.userName}</p>
             </div>
           </div>
           <button onClick={() => logout()} className="px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg font-medium text-sm"
@@ -241,8 +247,8 @@ function TodosContent() {
           backgroundSize: '100% 32px, 40px 100%', backgroundPosition: '0 8px, 20px 0',
           boxShadow: '0 10px 30px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.8)',
         }}>
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2" style={{ color: '#6B5E52', fontFamily: '\'Playfair Display\', serif' }}>
-            <span style={{ fontSize: '1.5rem' }}>✎</span> Write a New Task
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2" style={{ color: '#6B5E52', fontFamily: '\'Niconne\', cursive', fontSize: '2rem' }}>
+            <span style={{ fontSize: '2rem' }}>✎</span> Write a New Task
           </h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
@@ -253,7 +259,7 @@ function TodosContent() {
                 className="w-full px-4 py-3 border-b-2 focus:outline-none focus:border-b-3 transition-all"
                 style={{
                   backgroundColor: 'transparent', borderColor: '#B5A495', color: '#4A4239',
-                  fontFamily: '\'Niconne\', cursive', fontSize: '1.3rem',
+                  fontFamily: '\'Niconne\', cursive', fontSize: '1.5rem',
                   borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderRadius: 0,
                 }}
               />
@@ -273,7 +279,7 @@ function TodosContent() {
               <CategorySelector categories={categories || []} value={watch("categoryId")} onChange={(v) => setValue("categoryId", v)} className="flex-1" />
               <button type="submit" disabled={createMutation.isPending} className="px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
                 style={{ backgroundColor: '#B5A495', color: '#FFFEF9', border: '3px solid #9B8A7C', fontFamily: '\'Georgia\', serif' }}>
-                {createMutation.isPending ? "Writing..." : "✎ Add Task"}
+                {createMutation.isPending ? "Writing..." : "Add to Page"}
               </button>
             </div>
           </form>
@@ -285,9 +291,9 @@ function TodosContent() {
           backgroundImage: `repeating-linear-gradient(transparent, transparent 31px, rgba(217, 207, 192, 0.15) 31px, rgba(217, 207, 192, 0.15) 32px)`,
           backgroundSize: '100% 32px', backgroundPosition: '0 8px',
         }}>
-          <h2 className="text-2xl font-bold mb-5 flex items-center justify-between" style={{ color: '#6B5E52', fontFamily: '\'Playfair Display\', serif' }}>
+          <h2 className="text-2xl font-bold mb-5 flex items-center justify-between" style={{ color: '#6B5E52', fontFamily: '\'Niconne\', cursive', fontSize: '2.2rem' }}>
             <span>My Tasks</span>
-            <span className="px-3 py-1 rounded-full text-sm font-semibold" style={{ backgroundColor: '#E5DDD0', color: '#6B5E52', border: '2px solid #B5A495' }}>{todos?.length || 0}</span>
+            <span className="px-3 py-1 rounded-full text-sm font-semibold" style={{ backgroundColor: '#E5DDD0', color: '#6B5E52', border: '2px solid #B5A495', fontFamily: '\'Courier New\'' }}>{todos?.length || 0}</span>
           </h2>
           <div className="flex justify-end mb-4">
             <button onClick={() => setCategoryModalOpen(true)} className="px-4 py-2 text-sm font-medium rounded-lg shadow-md hover:shadow-lg"
@@ -311,7 +317,6 @@ function TodosContent() {
                       <input type="checkbox" checked={todo.isCompleted} onChange={() => toggleMutation.mutate(todo.todoId)} className="w-5 h-5 rounded-sm cursor-pointer" style={{ accentColor: '#8B7355', border: '2px solid #8B7355', zIndex: 1 }} />
 
                       {editingId === todo.todoId ? (
-                        /* EDIT MODE: Niconne Font & Transparent Background */
                         <div className="flex-1 flex flex-wrap items-center gap-2" style={{ zIndex: 1 }}>
                           <input 
                             ref={editInputRef}
@@ -321,27 +326,21 @@ function TodosContent() {
                             onKeyDown={(e) => { if (e.key === "Enter") handleUpdate(todo.todoId, editingContent, editingDueDate, editingPriority, editingCategoryId); }}
                             className="flex-1 min-w-[200px] bg-transparent border-none focus:outline-none focus:ring-0 p-0"
                             style={{ 
-                              color: '#4A4239', 
-                              fontFamily: '\'Niconne\', cursive', 
-                              fontSize: '1.4rem',
-                              borderBottom: '1px dashed #B5A495' // Yazarken rehber olması için çok hafif bir alt çizgi
+                              color: '#4A4239', fontFamily: '\'Niconne\', cursive', fontSize: '1.4rem', borderBottom: '1px dashed #B5A495'
                             }}
                           />
                           <input type="datetime-local" value={editingDueDate} onChange={(e) => setEditingDueDate(e.target.value)}
-                            className="px-2 py-1 border rounded text-sm"
-                            style={{ backgroundColor: 'transparent', borderColor: '#B5A495', color: '#4A4239', fontFamily: '\'Courier New\'' }}
-                          />
+                            className="px-2 py-1 border rounded text-sm" style={{ backgroundColor: 'transparent', borderColor: '#B5A495', color: '#4A4239', fontFamily: '\'Courier New\'' }} />
                           <CategorySelector categories={categories || []} value={editingCategoryId} onChange={setEditingCategoryId} className="min-w-[140px]" />
                           <button onClick={() => handleUpdate(todo.todoId, editingContent, editingDueDate, editingPriority, editingCategoryId)}
                             className="px-3 py-1 rounded text-sm font-bold shadow-sm" style={{ backgroundColor: '#B5A495', color: '#FFFEF9' }}>✓</button>
                           <button onClick={() => setEditingId(null)} className="px-3 py-1 rounded text-sm font-bold shadow-sm" style={{ backgroundColor: '#D9CFC0', color: '#6B5E52' }}>✗</button>
                         </div>
                       ) : (
-                        /* VIEW MODE: Wavy Underline Matches Text Width */
                         <div className="flex-1" style={{ position: 'relative', width: 'fit-content' }}>
                           <div style={{ display: 'inline-block', position: 'relative' }}>
                             <span onClick={() => handleEdit(todo)} className={`cursor-pointer block ${todo.isCompleted ? "line-through" : ""}`} style={{ color: todo.isCompleted ? '#B5A99D' : '#4A4239', fontFamily: '\'Niconne\', cursive', fontSize: '1.4rem' }}>{todo.todoContent}</span>
-                            <WavyUnderline priority={todo.priority ?? Priority.Medium} />
+                            <WavyUnderline dueDate={todo.dueDate} />
                           </div>
                         </div>
                       )}
@@ -356,19 +355,37 @@ function TodosContent() {
               {/* Categorized Todos */}
               {categories?.filter((cat) => todos?.some((t) => t.categoryId === cat.categoryId)).map((category) => (
                 <div key={category.categoryId} className="space-y-2 mb-6">
+                  {/* CATEGORY HEADER */}
                   {editingCategoryHeaderId === category.categoryId ? (
-                    <div className="flex items-center gap-2 mb-3">
-                      <input type="text" value={editingCategoryName} onChange={(e) => setEditingCategoryName(e.target.value)}
+                    <div className="flex items-center gap-2 mb-3 pl-2">
+                       {/* EDIT MODE: VINTAGE INPUT STYLE */}
+                      <input 
+                        ref={categoryInputRef}
+                        type="text" 
+                        value={editingCategoryName} 
+                        onChange={(e) => setEditingCategoryName(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") updateCategoryMutation.mutate({ id: category.categoryId, name: editingCategoryName }); }}
-                        className="flex-1 px-3 py-2 border-2 rounded-lg font-bold" autoFocus style={{ borderColor: '#6B5E52', color: '#6B5E52', fontFamily: '\'Playfair Display\'' }} />
-                      <button onClick={() => updateCategoryMutation.mutate({ id: category.categoryId, name: editingCategoryName })}>✓</button>
-                      <button onClick={() => setEditingCategoryHeaderId(null)}>✗</button>
+                        className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 p-0"
+                        style={{ 
+                            borderColor: '#6B5E52', color: '#6B5E52', 
+                            fontFamily: '\'Niconne\', cursive', fontSize: '1.8rem', // Todo update teması uygulandı
+                            borderBottom: '1px dashed #6B5E52' 
+                        }} 
+                      />
+                      <button onClick={() => updateCategoryMutation.mutate({ id: category.categoryId, name: editingCategoryName })} className="px-2 py-1 text-sm rounded bg-[#B5A495] text-white">✓</button>
+                      <button onClick={() => setEditingCategoryHeaderId(null)} className="px-2 py-1 text-sm rounded bg-[#D9CFC0] text-[#6B5E52]">✗</button>
                     </div>
                   ) : (
-                    <h3 className="font-bold text-xl flex items-center gap-2 cursor-pointer mb-3 pb-2 border-b-2" style={{ color: '#6B5E52', borderColor: '#6B5E52', fontFamily: '\'Playfair Display\', serif' }}
-                      onClick={() => { setEditingCategoryHeaderId(category.categoryId); setEditingCategoryName(category.name); }}>
-                      {category.icon && <span className="text-2xl">{category.icon}</span>} {category.name}
-                    </h3>
+                    <div className="mb-4 pl-2" style={{ position: 'relative', display: 'inline-block' }}>
+                        {/* VIEW MODE: REVERTED TO Playfair Display (Original/Clean) */}
+                        <h3 className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity" 
+                            style={{ color: '#6B5E52', fontFamily: '\'Playfair Display\', serif', fontSize: '1.5rem', fontWeight: 'bold' }} // Eski haline döndü
+                            onClick={() => handleEditCategory(category.categoryId, category.name)}>
+                          {category.icon && <span className="text-xl">{category.icon}</span>} {category.name}
+                        </h3>
+                        {/* Alt çizgi (düz) */}
+                         <div style={{ height: '2px', backgroundColor: '#6B5E52', width: '100%', marginTop: '4px', opacity: 0.5 }}></div>
+                    </div>
                   )}
 
                   <div className="space-y-1 pl-4">
@@ -381,7 +398,6 @@ function TodosContent() {
                         <input type="checkbox" checked={todo.isCompleted} onChange={() => toggleMutation.mutate(todo.todoId)} className="w-5 h-5 rounded-sm" style={{ accentColor: '#B5A495', border: '2px solid #B5A495', zIndex: 1 }} />
 
                         {editingId === todo.todoId ? (
-                          /* EDIT MODE (Categorized): Niconne Font & Transparent Background */
                           <div className="flex-1 flex flex-wrap items-center gap-2" style={{ zIndex: 1 }}>
                             <input 
                               ref={editInputRef}
@@ -391,10 +407,7 @@ function TodosContent() {
                               onKeyDown={(e) => { if (e.key === "Enter") handleUpdate(todo.todoId, editingContent, editingDueDate, editingPriority, editingCategoryId); }}
                               className="flex-1 min-w-[200px] bg-transparent border-none focus:outline-none focus:ring-0 p-0"
                               style={{ 
-                                color: '#4A4239', 
-                                fontFamily: '\'Niconne\', cursive', 
-                                fontSize: '1.4rem',
-                                borderBottom: '1px dashed #B5A495'
+                                color: '#4A4239', fontFamily: '\'Niconne\', cursive', fontSize: '1.4rem', borderBottom: '1px dashed #B5A495'
                               }}
                             />
                             <button onClick={() => handleUpdate(todo.todoId, editingContent, editingDueDate, editingPriority, editingCategoryId)}
@@ -402,11 +415,10 @@ function TodosContent() {
                             <button onClick={() => setEditingId(null)} className="px-3 py-1 rounded text-sm font-bold shadow-sm" style={{ backgroundColor: '#D9CFC0', color: '#6B5E52' }}>✗</button>
                           </div>
                         ) : (
-                          /* VIEW MODE (Categorized): Wavy Underline Matches Text Width */
                           <div className="flex-1" style={{ position: 'relative', width: 'fit-content' }}>
                              <div style={{ display: 'inline-block', position: 'relative' }}>
                                 <span onClick={() => handleEdit(todo)} className={`cursor-pointer block ${todo.isCompleted ? "line-through text-gray-400" : "text-gray-700"}`} style={{ fontFamily: '\'Niconne\', cursive', fontSize: '1.4rem' }}>{todo.todoContent}</span>
-                                <WavyUnderline priority={todo.priority ?? Priority.Medium} />
+                                <WavyUnderline dueDate={todo.dueDate} />
                              </div>
                           </div>
                         )}
