@@ -117,8 +117,8 @@ export default function LoginPage() {
           duration: 2,
           ease: "easeInOut"
         }}
+        className="w-[90%] sm:w-[85%] md:w-[70%] lg:w-[60%] xl:w-[500px]"
         style={{
-          width: '90%',
           maxWidth: '500px',
           aspectRatio: '3/4',
           position: 'relative',
@@ -186,13 +186,13 @@ export default function LoginPage() {
             borderRadius: '4px 8px 8px 4px',
             border: '4px solid #5A4E42',
             boxShadow: '5px 5px 20px rgba(0,0,0,0.4)',
-            padding: '40px',
+            padding: '20px',
             backgroundImage: `repeating-radial-gradient(circle at 20% 30%, rgba(0,0,0,0.03) 0px, transparent 2px, transparent 3px, rgba(0,0,0,0.03) 4px)`,
             transform: 'translateZ(0)',
           }}>
             
-            {/* Corner decorations */}
-            <svg style={{ position: 'absolute', top: '12px', left: '12px', width: '40px', height: '40px' }} viewBox="0 0 40 40">
+            {/* Corner decorations - hide on very small screens */}
+            <svg className="hidden sm:block" style={{ position: 'absolute', top: '8px', left: '8px', width: '30px', height: '30px' }} viewBox="0 0 40 40">
               <path d="M 0,15 L 0,0 L 15,0" stroke="#D4AF37" strokeWidth="2" fill="none" opacity="0.7" />
               <circle cx="8" cy="8" r="2" fill="#D4AF37" opacity="0.6" />
             </svg>

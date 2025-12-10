@@ -237,9 +237,9 @@ function TodosContent() {
         backgroundImage: 'linear-gradient(90deg, rgba(155, 138, 124, 0.1) 0px, transparent 1px), linear-gradient(rgba(155, 138, 124, 0.1) 0px, transparent 1px)',
         backgroundSize: '20px 20px',
       }}>
-        <div className="max-w-5xl mx-auto px-4 py-5 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-lg" style={{
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center shadow-lg" style={{
               backgroundColor: '#E5DDD0', border: '3px solid #B5A495', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1), 0 3px 6px rgba(0,0,0,0.15)',
             }}>
               <svg className="w-7 h-7" fill="none" stroke="#6B5E52" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -247,10 +247,10 @@ function TodosContent() {
               </svg>
             </div>
             <div>
-              <h1 className="text-2xl font-bold" style={{
-                color: '#FFFEF9', textShadow: '1px 1px 3px rgba(0,0,0,0.3)', fontFamily: '\'Niconne\', cursive', letterSpacing: '2px', fontSize: '2.5rem'
+              <h1 className="text-xl sm:text-2xl font-bold" style={{
+                color: '#FFFEF9', textShadow: '1px 1px 3px rgba(0,0,0,0.3)', fontFamily: '\'Niconne\', cursive', letterSpacing: '2px', fontSize: 'clamp(1.5rem, 4vw, 2.5rem)'
               }}>Leaf Note</h1>
-              <p className="text-sm" style={{ color: '#E5DDD0', fontFamily: '\'Courier New\'' }}>{user?.fullName || user?.userName}</p>
+              <p className="text-xs sm:text-sm" style={{ color: '#E5DDD0', fontFamily: '\'Courier New\'', display: user?.fullName || user?.userName ? 'block' : 'none' }}>{user?.fullName || user?.userName}</p>
             </div>
           </div>
           <button onClick={() => logout()} className="px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg font-medium text-sm"
@@ -264,7 +264,7 @@ function TodosContent() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: isPageLoaded ? 1 : 0, y: isPageLoaded ? 0 : 20 }}
         transition={{ duration: 0.4, delay: 0.15, ease: "easeOut" }}
-        className="max-w-5xl mx-auto px-4 py-8"
+        className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8"
         style={{ willChange: 'transform, opacity' }}
       >
         {/* Create Todo Form */}
@@ -272,14 +272,14 @@ function TodosContent() {
           initial={{ opacity: 0 }}
           animate={{ opacity: isPageLoaded ? 1 : 0 }}
           transition={{ duration: 0.3, delay: 0.2, ease: "easeOut" }}
-          className="p-6 rounded-xl shadow-2xl mb-6 border-4" 
+          className="p-4 sm:p-5 md:p-6 rounded-xl shadow-2xl mb-4 sm:mb-6 border-4" 
           style={{
           backgroundColor: '#FFFEF9', borderColor: '#D9CFC0',
           backgroundImage: `repeating-linear-gradient(transparent, transparent 31px, rgba(217, 207, 192, 0.15) 31px, rgba(217, 207, 192, 0.15) 32px), linear-gradient(90deg, rgba(217, 207, 192, 0.25) 1px, transparent 1px)`,
           backgroundSize: '100% 32px, 40px 100%', backgroundPosition: '0 8px, 20px 0',
           boxShadow: '0 10px 30px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.8)',
         }}>
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2" style={{ color: '#6B5E52', fontFamily: '\'Niconne\', cursive', fontSize: '2rem' }}>
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 flex items-center gap-2" style={{ color: '#6B5E52', fontFamily: '\'Niconne\', cursive', fontSize: 'clamp(1.25rem, 3vw, 2rem)' }}>
             <span style={{ fontSize: '2rem' }}>✎</span> Write a New Task
           </h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -301,15 +301,15 @@ function TodosContent() {
                 </p>
               )}
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <input
                 {...register("dueDate")}
                 type="datetime-local"
-                className="flex-1 px-4 py-3 border-2 rounded-lg focus:outline-none transition-all"
-                style={{ backgroundColor: '#FFFEF9', borderColor: '#B5A495', color: '#4A4239', fontFamily: '\'Courier New\'' }}
+                className="w-full sm:flex-1 px-3 sm:px-4 py-2 sm:py-3 border-2 rounded-lg focus:outline-none transition-all text-sm sm:text-base"
+                style={{ backgroundColor: '#FFFEF9', borderColor: '#B5A495', color: '#4A4239', fontFamily: '\'Courier New\'', fontSize: 'clamp(0.875rem, 2vw, 1rem)' }}
               />
-              <CategorySelector categories={categories || []} value={watch("categoryId")} onChange={(v) => setValue("categoryId", v)} className="flex-1" />
-              <button type="submit" disabled={createMutation.isPending} className="px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+              <CategorySelector categories={categories || []} value={watch("categoryId")} onChange={(v) => setValue("categoryId", v)} className="w-full sm:flex-1" />
+              <button type="submit" disabled={createMutation.isPending} className="w-full sm:w-auto px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 text-sm sm:text-base"
                 style={{ backgroundColor: '#B5A495', color: '#FFFEF9', border: '3px solid #9B8A7C', fontFamily: '\'Georgia\', serif' }}>
                 {createMutation.isPending ? "Writing..." : "Add to Page"}
               </button>
@@ -322,18 +322,18 @@ function TodosContent() {
           initial={{ opacity: 0 }}
           animate={{ opacity: isPageLoaded ? 1 : 0 }}
           transition={{ duration: 0.3, delay: 0.25, ease: "easeOut" }}
-          className="rounded-2xl shadow-2xl p-6 border-4" 
+          className="rounded-2xl shadow-2xl p-4 sm:p-5 md:p-6 border-4" 
           style={{
           backgroundColor: '#FFFEF9', borderColor: '#B5A495',
           backgroundImage: `repeating-linear-gradient(transparent, transparent 31px, rgba(217, 207, 192, 0.15) 31px, rgba(217, 207, 192, 0.15) 32px)`,
           backgroundSize: '100% 32px', backgroundPosition: '0 8px',
         }}>
-          <h2 className="text-2xl font-bold mb-5 flex items-center justify-between" style={{ color: '#6B5E52', fontFamily: '\'Niconne\', cursive', fontSize: '2.2rem' }}>
+          <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0" style={{ color: '#6B5E52', fontFamily: '\'Niconne\', cursive', fontSize: 'clamp(1.5rem, 4vw, 2.2rem)' }}>
             <span>My Tasks</span>
-            <span className="px-3 py-1 rounded-full text-sm font-semibold" style={{ backgroundColor: '#E5DDD0', color: '#6B5E52', border: '2px solid #B5A495', fontFamily: '\'Courier New\'' }}>{todos?.length || 0}</span>
+            <span className="px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold" style={{ backgroundColor: '#E5DDD0', color: '#6B5E52', border: '2px solid #B5A495', fontFamily: '\'Courier New\'' }}>{todos?.length || 0}</span>
           </h2>
-          <div className="flex justify-end mb-4">
-            <button onClick={() => setCategoryModalOpen(true)} className="px-4 py-2 text-sm font-medium rounded-lg shadow-md hover:shadow-lg"
+          <div className="flex justify-end mb-3 sm:mb-4">
+            <button onClick={() => setCategoryModalOpen(true)} className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-lg shadow-md hover:shadow-lg"
               style={{ backgroundColor: '#D9CFC0', color: '#6B5E52', border: '2px solid #B5A495', fontFamily: '\'Georgia\'' }}>
               Organize Sections
             </button>
